@@ -264,14 +264,16 @@ func (wc *websocketManager) HandleCancelDeploy(ctx context.Context, c Conn, t we
 }
 
 // installProject 是创建/更新项目的公共入口：复用 deploy.ApplyProject 的共享编排
-// （鉴权、仓库取回、git ensure、版本反查、Job 装配、ctx watcher、InstallProject）。
-// 本层仅以 OnJob 钩子登记取消回调（任务已存在则回失败帧，ApplyProject 据此跳过流水线），
-// 并在部署结束后移除回调。相比旧实现补齐了命名空间访问校验与连接断开的部署取消。
+// （鉴权、仓库取回、git ensure、版本反查、仓库可见性拦截、Job 装配、ctx watcher、InstallProject）。
+// 本层以 OnJob 钩子登记取消回调（任务已存在则回失败帧，ApplyProject 据此跳过流水线），
+// 并在部署结束后移除回调；编排阶段（建 Job 之前）的失败不会走 runner 结果帧，因此这里
+// 负责补发 SendEndError，避免客户端只看到"部署转圈无反馈"。
+// 相比旧实现补齐了命名空间访问校验与连接断开的部署取消。
 func (wc *websocketManager) installProject(ctx context.Context, c Conn, input *deploy.JobInput) error {
 	indent, _ := json.MarshalIndent(input, "", "  ")
 	wc.logger.Debug(string(indent))
 
-	_, err := deploy.ApplyProject(ctx, deploy.ApplyProjectDeps{
+	job, err := deploy.ApplyProject(ctx, deploy.ApplyProjectDeps{
 		// 复用注入的 wc.accessBiz（用户提取内部走 MustGetUser）：ApplyProject 入口已把
 		// JobInput.User 物化进 ctx，WS 的 user（Conn）与 gRPC 一致从 ctx 取值。
 		AccessBiz:  wc.accessBiz,
@@ -298,6 +300,12 @@ func (wc *websocketManager) installProject(ctx context.Context, c Conn, input *d
 			return nil
 		},
 	})
+	// 编排阶段（建 Job 之前）的失败不会走 runner 的结果帧，客户端拿不到任何反馈；
+	// 在此补一条错误帧（如命名空间越权、仓库仅管理员可用）。job 非 nil 时说明流水线
+	// 已启动，失败结果由 runner 的 SendDeployedResult 负责，不能重复发送。
+	if job == nil && err != nil && input.Messager != nil {
+		input.Messager.SendEndError(err)
+	}
 	return err
 }
 

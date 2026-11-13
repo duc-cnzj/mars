@@ -338,6 +338,10 @@ export default {
     nameRequired: 'Please enter a name',
     appDescription: 'App description',
     needGitRepo: 'Link a Git repository',
+    adminOnly: 'Visible to admins only',
+    adminOnlyHint:
+      'Hidden from non-admin users when creating a project; existing projects remain visible and deployable.',
+    adminOnlyTag: 'Admins only',
     gitRepo: 'Git repository',
     enabledBranches: 'Enabled branches',
     allBranches: 'All',

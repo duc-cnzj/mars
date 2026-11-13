@@ -18,6 +18,9 @@ message Option {
   string branch         = 6;
   bool   need_git_repo  = 7;
   string description    = 8;
+  // admin_only 为 true 时该仓库仅管理员可见：前端在仓库下拉里对它做标记
+  //（普通用户本就不会收到该项，见 ProjectOptions 的服务端过滤）。
+  bool   admin_only     = 9;
 }
 
 message ProjectOptionsRequest {}

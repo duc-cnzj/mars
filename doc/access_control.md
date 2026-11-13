@@ -74,7 +74,7 @@
 | file | MaxUploadSize | 🔑 | allowlist `/file.File/MaxUploadSize` |
 | file | ShowRecords | 📄 `RequireFileAccess`（所有者/admin） | file.go:86 方法体 `GetByID` + `RequireFileAccess`；allowlist file.go:135 放行后做所有者判定 |
 | file | List / DiskInfo / Delete | ⭐ | file.go:135（Authorize 门禁） |
-| repo | List / Show | 🔑 | allowlist `/repo.Repo/List` `/Show` |
+| repo | List / Show | 🔑 | allowlist `/repo.Repo/List` `/Show`；List 对非 admin 强制 `admin_only=false`（忽略请求参数），admin 可按请求参数 `admin_only` 筛选；Show 刻意不按可见性过滤（存量项目/MCP `resolveGitProject` 依赖，避免改可见性打断已有项目） |
 | repo | Create / Update / ToggleEnabled / Delete / Clone / Import / Export / ExportOne | ⭐ | repo.go:369（Authorize 门禁） |
 | user | List / ToggleAdmin / ResetRolesOverride / ToggleGray | ⭐ | user.go:38（Authorize → RequireAdmin，无 allowlist，整服务 admin） |
 | settings | Get | ⭐⭐ 内置超管 | settings.go:39（Authorize 直接 `IsSuperAdmin`，无 allowlist，整服务超管） |
@@ -109,7 +109,7 @@
 | project | CheckApplyStatus / ResourceTree | 🧩 `RequireProjectAccess` | project.go:636 / 653 |
 | project | ShowByName | 🛡️ `RequireNamespaceAccessByName` + 🧩 `RequireProjectAccess` | project.go:438 空间门卫；:456 取完整模型 |
 | project | WebApply / Apply | 🛡️ `RequireNamespaceAccessByID` | deploy/apply.go:62（私有空间成员即可部署） |
-| project | WebApplyByName | 🛡️ `RequireNamespaceAccessByName`（部署编排再复核） | project.go:234；deploy.ApplyProject 内 apply.go:62 再按空间 ID 复核；仓库由 name 匹配或 repo_id 指定，后续有「绑定仓库不可变」守卫 |
+| project | WebApplyByName | 🛡️ `RequireNamespaceAccessByName`（部署编排再复核） | project.go:234；deploy.ApplyProject 内 apply.go:62 再按空间 ID 复核；仓库由 name 匹配或 repo_id 指定，后续有「绑定仓库不可变」守卫；`admin_only` 仓库仅拦截**新建**（apply.go 版本反查后 ProjectID==0），存量项目更新放行 |
 | project | List | 🔑 | data 层按命名空间访问谓词过滤 |
 | container | IsPodRunning / IsPodExists / ContainerLog / CopyToPod / StreamCopyToPod / StreamContainerLog / Exec / ExecOnce / ForceDeletePod | 🛡️ `RequireNamespaceAccessByName` | container.go:62 / 72 / 91 / 116 / 180 / 262 / 311 / 328 / 344；CopyToPod 另加 `RequireFileAccess`（container.go:128） |
 | endpoint | InNamespace | 🛡️ `RequireNamespaceAccessByID` | endpoint.go:42 |
@@ -126,7 +126,7 @@
 | auth | Info | 🔑 | 登录拦截器验签后注入 ctx 用户，本方法 `MustGetUser` 取用户做映射（无用户=编程错误 panic，白名单不含 Info） |
 | accessToken | List | 🔑 | 按 Email 只返回本人 token（access_token.go:58） |
 | accessToken | Grant / Lease / Revoke | 🔑 | 按 token 值操作，"持有即有权"（见 §6.3） |
-| git | AllRepos / ProjectOptions / BranchOptions / CommitOptions / Commit / PipelineInfo / PipelineInfoByRepoId / PipelineJobOptions / GetChartValuesYaml | 🔑 | git 信息不绑定命名空间（全局仓库） |
+| git | AllRepos / ProjectOptions / BranchOptions / CommitOptions / Commit / PipelineInfo / PipelineInfoByRepoId / PipelineJobOptions / GetChartValuesYaml | 🔑 | git 信息不绑定命名空间（全局仓库）；ProjectOptions 对非 admin 追加 `admin_only=false` 过滤（新建项目的仓库下拉） |
 | event | List / Show | 🔑 登录即可（普通用户仅见本人） | event.go:55 按操作人邮箱（operator_email）归属过滤：admin 全量，普通用户只看自己的事件；Show（event.go:92）越权访问返回 404（视同不存在，防审计日志 id 枚举） |
 | hibernate | ListWindows | 🔑 | hibernate.go:55（Authorize allowlist 豁免，登录即可读全量时间窗；项目卡片按 window_names 展示时段需要。Create/Update/Delete 仍 admin，见 §4.2） |
 

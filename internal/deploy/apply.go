@@ -44,8 +44,9 @@ type ApplyProjectInput struct {
 // ApplyProject 执行部署用例编排（gRPC/WebSocket 共享），返回 (job, 流水线错误)。
 // 顺序与现 projectSvc.apply 完全一致保证行为对齐；唯一的传输层差异（pubsub 的
 // 创建/关闭、取消任务登记）由调用方在 JobInput/OnJob 中表达。
-// 本函数不打印错误日志：所有失败路径（鉴权/仓库取回/git ensure/版本反查/InstallProject）
-// 都直接上抛 err，由 services 层 logError（gRPC）或 wc.logger.Error（WS）统一打印一次。
+// 本函数不打印错误日志：所有失败路径（鉴权/仓库取回/git ensure/版本反查/仓库可见性拦截/
+// InstallProject）都直接上抛 err，由 services 层 logError（gRPC）或 wc.logger.Error（WS）
+// 统一打印一次。
 func ApplyProject(ctx context.Context, deps ApplyProjectDeps, input *ApplyProjectInput) (Job, error) {
 	// 匿名部署（User==nil）无法建档/审计（runner 会 nil-deref panic），一律拒绝。
 	// 鉴权流程必带用户，此守卫对合法流恒不触发。
@@ -104,6 +105,13 @@ func ApplyProject(ctx context.Context, deps ApplyProjectDeps, input *ApplyProjec
 		} else {
 			input.JobInput.ProjectID = int32(proj.ID)
 		}
+	}
+
+	// 仅管理员可见的仓库：普通用户只能操作已存在的项目，不得借它新建项目。
+	// 版本反查后 ProjectID==0 即首次创建；更新路径 ProjectID 已定位，天然放行——
+	// 这样把仓库改成 admin_only 不会打断存量项目的重新部署。
+	if input.JobInput.ProjectID == 0 && show.AdminOnly && !biz.MustGetUser(ctx).IsAdmin() {
+		return nil, errs.WrapPermissionDenied(errs.ErrorPermissionDenied, "该仓库仅管理员可用，无法用于新建项目")
 	}
 
 	job := deps.JobMgr.NewJob(input.JobInput)

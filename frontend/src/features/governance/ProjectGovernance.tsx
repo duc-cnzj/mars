@@ -207,6 +207,33 @@ const GovernanceRow = memo(function GovernanceRow({
           POST 同一 ToggleHibernate 端点（不触发重部署）：改窗保留开关态，清空时间窗则连带关闭休眠。 */}
       <div className="flex min-w-0 flex-col gap-0.5">
         <div className="flex items-center gap-1.5">
+          {/* 时间窗编辑入口：仅仓库声明了可用窗时给出（与「查看项目」弹窗同款「无选窗入口」判据）。
+              置于开关之前，避免编辑按钮被推到行尾。 */}
+          {hasRepoWindows && (
+            <Popover open={winOpen} onOpenChange={setWinOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t('project.hibernateWindow')}
+                  title={t('project.hibernateWindow')}
+                  disabled={disabled}
+                  className={`${item.hibernateEnabled ? hibernateIconActive : iconTriggerCls} -ml-1`}
+                >
+                  <Icon name="pencil" className="size-3.5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" sideOffset={4} className="w-[min(420px,90vw)] p-3">
+                {/* 时间窗（可写）：多选仓库窗子集 + 生效时段一览；每次勾选即提交（enabled 不变） */}
+                <HibernateWindowSelect
+                  value={item.hibernateWindowNames ?? []}
+                  repoWindowNames={item.hibernateRepoWindowNames ?? []}
+                  windows={windows}
+                  onChange={(names) => onSaveWindows(item, names)}
+                  disabled={disabled}
+                />
+              </PopoverContent>
+            </Popover>
+          )}
           <Switch
             size="sm"
             aria-label={`${item.name} ${t('governance.hibernate')}`}
@@ -227,32 +254,6 @@ const GovernanceRow = memo(function GovernanceRow({
             </span>
           ) : (
             <span className="text-[12px] text-faint">{t('governance.hibernateOff')}</span>
-          )}
-          {/* 时间窗编辑入口：仅仓库声明了可用窗时给出（与「查看项目」弹窗同款「无选窗入口」判据） */}
-          {hasRepoWindows && (
-            <Popover open={winOpen} onOpenChange={setWinOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={t('project.hibernateWindow')}
-                  title={t('project.hibernateWindow')}
-                  disabled={disabled}
-                  className={`${item.hibernateEnabled ? hibernateIconActive : iconTriggerCls} -mr-1 ml-auto`}
-                >
-                  <Icon name="pencil" className="size-3.5" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="end" sideOffset={4} className="w-[min(420px,90vw)] p-3">
-                {/* 时间窗（可写）：多选仓库窗子集 + 生效时段一览；每次勾选即提交（enabled 不变） */}
-                <HibernateWindowSelect
-                  value={item.hibernateWindowNames ?? []}
-                  repoWindowNames={item.hibernateRepoWindowNames ?? []}
-                  windows={windows}
-                  onChange={(names) => onSaveWindows(item, names)}
-                  disabled={disabled}
-                />
-              </PopoverContent>
-            </Popover>
           )}
         </div>
         {(item.hibernateWindowNames ?? []).length > 0 && (

@@ -40,6 +40,7 @@ function repoImportYaml(m: RepoModel): string {
   return stringify({
     enabled: m.enabled,
     needGitRepo: m.needGitRepo,
+    adminOnly: m.adminOnly,
     gitProjectId: m.gitProjectId,
     description: m.description,
     marsConfig: m.marsConfig,
@@ -47,6 +48,11 @@ function repoImportYaml(m: RepoModel): string {
 }
 
 const PAGE_SIZE = 15
+
+/** 列表查询条件键：关键词 + 「仅管理员」筛选。用于跨条件丢弃晚到响应与同条件去重。 */
+function listCond(keyword: string, adminOnly: boolean): string {
+  return `${keyword}|${adminOnly ? 1 : 0}`
+}
 
 /**
  * Repo 管理：列表（搜索 + 分页）+ 添加/编辑 + 克隆 + 启用/禁用 + 删除。
@@ -63,6 +69,8 @@ export function Repos() {
   const [keyword, setKeyword] = useState(() => searchParams.get('name') ?? '')
   /** 搜索防抖 300ms（SEARCH_DEBOUNCE_MS，对齐 events 页）：避免每敲一个键就触发一次「整列表变骨架」的重拉 */
   const [debouncedKeyword, setDebouncedKeyword] = useState(() => searchParams.get('name') ?? '')
+  /** 「仅管理员可见」筛选：走服务端分页过滤（客户端过滤会漏掉未加载的后续页） */
+  const [adminOnlyOnly, setAdminOnlyOnly] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
@@ -79,13 +87,14 @@ export function Repos() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const busyRef = useRef(false)
   const refreshingRef = useRef(false)
-  /** 上次实际发出的 (debouncedKeyword, page)：刷新完成后的 effect 重跑据此去重 */
-  const lastKwRef = useRef('')
+  /** 上次实际发出的 (条件, page)：刷新完成后的 effect 重跑据此去重 */
+  const lastCondRef = useRef('')
   const lastPageRef = useRef(0)
-  /** 最新关键词快照（渲染期同步）：fetchList 落地时校验响应是否仍属当前条件，
-   *  丢弃「旧关键词的追加页晚到」的跨条件污染（对齐 Events reqIdRef / NamespaceManager filterKeyRef） */
-  const kwRef = useRef(debouncedKeyword)
-  kwRef.current = debouncedKeyword
+  /** 最新查询条件快照（渲染期同步）：fetchList 落地时校验响应是否仍属当前条件，
+   *  丢弃「旧条件（关键词/仅管理员）的追加页晚到」的跨条件污染（对齐 Events reqIdRef / NamespaceManager filterKeyRef） */
+  const cond = listCond(debouncedKeyword, adminOnlyOnly)
+  const condRef = useRef(cond)
+  condRef.current = cond
   const hasMore = items.length < count
 
   const [formOpen, setFormOpen] = useState(false)
@@ -110,25 +119,28 @@ export function Repos() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchList = useCallback(
-    async (p: number, kw?: string, append = false) => {
+    async (p: number, kw?: string, adminOnly = false, append = false) => {
       busyRef.current = true
       if (append) setLoadingMore(true)
       else setInitialLoading(true)
       try {
+        const reqCond = listCond(kw ?? '', adminOnly)
         const { data, error } = await api.GET(API.repos, {
           params: {
             query: {
               page: p,
               pageSize: PAGE_SIZE,
               name: kw?.trim() || undefined,
+              // 仅在筛选开启时下发，关闭时不传（=全部仓库，与后端口径一致）
+              adminOnly: adminOnly || undefined,
             },
           },
         })
         if (error) throw new Error(error.message ?? String(error))
         if (!data) return
-        // 过期响应（关键词已变、此响应属于旧条件）：丢弃不落地——
+        // 过期响应（条件已变、此响应属于旧条件）：丢弃不落地——
         // 触底加载的追加页晚到时不能把旧条件的下一页 append 进新结果，否则跨条件污染
-        if (kwRef.current !== kw) return
+        if (condRef.current !== reqCond) return
         setItems((prev) => (append ? [...prev, ...data.items] : data.items))
         setCount(data.count)
       } catch (e) {
@@ -154,14 +166,14 @@ export function Repos() {
     // 防抖未落定（keyword 已变、debouncedKeyword 尚未跟上）不拉：否则 onChange 里 setPage(1)
     // 会让「深翻页后首次输入」以旧关键词抢拉一次第 1 页（旧数据闪现 + 一次浪费请求）
     if (keyword !== debouncedKeyword) return
-    // 同 (debouncedKeyword, page) 去重：刷新完成后的 effect 重跑不重复拉第 1 页
-    if (lastKwRef.current === debouncedKeyword && lastPageRef.current === page) {
+    // 同 (条件, page) 去重：刷新完成后的 effect 重跑不重复拉第 1 页
+    if (lastCondRef.current === cond && lastPageRef.current === page) {
       return
     }
-    lastKwRef.current = debouncedKeyword
+    lastCondRef.current = cond
     lastPageRef.current = page
-    void fetchList(page, debouncedKeyword, page > 1)
-  }, [page, debouncedKeyword, keyword, fetchList, refreshing])
+    void fetchList(page, debouncedKeyword, adminOnlyOnly, page > 1)
+  }, [page, debouncedKeyword, keyword, adminOnlyOnly, cond, fetchList, refreshing])
 
   // 搜索关键词变化 → 同步 URL query。replace 避免每次输入堆一条历史；
   // 空值直接删参数，URL 保持干净；其余参数原样保留
@@ -203,10 +215,10 @@ export function Repos() {
     // 回到顶部：让哨兵离开视口，刷新后不会自动加载后续页
     if (scrollRef.current) scrollRef.current.scrollTop = 0
     setPage(1)
-    // 预标记本次刷新要拉的 (debouncedKeyword, 1)，effect 重跑据此去重
-    lastKwRef.current = debouncedKeyword
+    // 预标记本次刷新要拉的 (条件, 1)，effect 重跑据此去重
+    lastCondRef.current = cond
     lastPageRef.current = 1
-    await fetchList(1, debouncedKeyword, false)
+    await fetchList(1, debouncedKeyword, adminOnlyOnly, false)
     busyRef.current = false
     refreshingRef.current = false
     setRefreshing(false)
@@ -435,6 +447,20 @@ export function Repos() {
               placeholder={t('repos.searchPlaceholder')}
               className="max-w-xs"
             />
+            {/* 仅管理员可见筛选：开启后服务端只返回 admin_only=true 的仓库（分页口径一致） */}
+            <Button
+              size="sm"
+              variant={adminOnlyOnly ? 'default' : 'outline'}
+              aria-pressed={adminOnlyOnly}
+              title={t('repos.adminOnlyHint')}
+              onClick={() => {
+                setAdminOnlyOnly((v) => !v)
+                setPage(1)
+              }}
+            >
+              <Icon name="filter" className="size-4" />
+              {t('repos.adminOnly')}
+            </Button>
             <Button size="sm" variant="outline" disabled={refreshing} onClick={refresh}>
               {refreshing ? (
                 <Icon name="loader" className="size-4 animate-spin" />
@@ -505,6 +531,7 @@ export function Repos() {
                   <Tag tone={item.enabled ? 'ok' : 'mute'}>
                     {item.enabled ? t('repos.enable') : t('repos.disable')}
                   </Tag>
+                  {item.adminOnly && <Tag tone="warn">{t('repos.adminOnlyTag')}</Tag>}
                   <span className="text-[11px] text-faint">
                     (id:{' '}
                     <button

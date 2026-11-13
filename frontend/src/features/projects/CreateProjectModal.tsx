@@ -239,9 +239,12 @@ export function CreateProjectModal({
       projectOptions.map((o) => ({
         value: o.value,
         label: o.label,
-        description: o.description,
+        // 管理员可见仓库单独打 badge（warn 色），与 description（accent 色）分开展示、色调区分；
+        // 普通用户本就不会收到该项。不改 label——label 会被 selectRepo 用作项目名。
+        badge: o.adminOnly ? t('repos.adminOnlyTag') : undefined,
+        description: o.description || undefined,
       })),
-    [projectOptions],
+    [projectOptions, t],
   )
   const branchOpts = useMemo(
     () => branchOptions.map((o) => ({ label: o.label, value: o.value })),

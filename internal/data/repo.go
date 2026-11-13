@@ -50,13 +50,14 @@ func NewRepo(data dataStore, gitRepo biz.GitRepo) biz.RepoRepo {
 	}
 }
 
-// All 按启用状态与是否需要 git 仓库过滤返回全部仓库。
+// All 按启用状态、是否需要 git 仓库与「仅管理员可见」过滤返回全部仓库（过滤项为 nil 时不生效）。
 func (r *repoImpl) All(ctx context.Context, in *biz.AllRepoRequest) (repos []*biz.Repo, err error) {
 	ctx, span := tracer.Start(ctx, "repoImpl/All")
 	defer func() { endSpan(span, err) }()
 	query := r.data.DB().Repo.Query().Where(
 		filters.IfEnabled(in.Enabled),
 		filters.IfBool(repo.FieldNeedGitRepo)(in.NeedGitRepo),
+		filters.IfBool(repo.FieldAdminOnly)(in.AdminOnly),
 	)
 	all, err := query.All(ctx)
 	if err != nil {
@@ -65,7 +66,7 @@ func (r *repoImpl) All(ctx context.Context, in *biz.AllRepoRequest) (repos []*bi
 	return slice.Map(all, toRepo), nil
 }
 
-// List 分页查询仓库列表并返回分页信息。
+// List 分页查询仓库列表并返回分页信息，支持启用状态/名称/「仅管理员可见」过滤。
 func (r *repoImpl) List(ctx context.Context, in *biz.ListRepoRequest) (repos []*biz.Repo, pag *pagination.Pagination, err error) {
 	ctx, span := tracer.Start(ctx, "repoImpl/List")
 	defer func() { endSpan(span, err) }()
@@ -74,12 +75,14 @@ func (r *repoImpl) List(ctx context.Context, in *biz.ListRepoRequest) (repos []*
 			filters.IfOrderByIDDesc(in.OrderByIDDesc),
 			filters.IfEnabled(in.Enabled),
 			filters.IfNameLike(in.Name),
+			filters.IfBool(repo.FieldAdminOnly)(in.AdminOnly),
 		)
 	all, err := query.Clone().
 		Select(
 			repo.FieldID,
 			repo.FieldName,
 			repo.FieldEnabled,
+			repo.FieldAdminOnly,
 			repo.FieldGitProjectID,
 			repo.FieldGitProjectName,
 			repo.FieldNeedGitRepo,
@@ -116,6 +119,7 @@ func (r *repoImpl) Create(ctx context.Context, in *biz.CreateRepoInput) (get *bi
 			SetNillableDefaultBranch(defaultBranch).
 			SetNillableGitProjectID(in.GitProjectID).
 			SetEnabled(in.Enabled).
+			SetAdminOnly(in.AdminOnly).
 			SetDescription(in.Description).
 			SetMarsConfig(in.MarsConfig)
 		if !in.NeedGitRepo {
@@ -187,6 +191,7 @@ func (r *repoImpl) Update(ctx context.Context, in *biz.UpdateRepoInput) (get *bi
 			SetNillableGitProjectID(in.GitProjectID).
 			SetNillableGitProjectName(projName).
 			SetNillableDefaultBranch(defaultBranch).
+			SetNillableAdminOnly(in.AdminOnly).
 			SetDescription(in.Description).
 			SetMarsConfig(in.MarsConfig)
 		if !in.NeedGitRepo {
@@ -256,6 +261,7 @@ func (r *repoImpl) Clone(ctx context.Context, input *biz.CloneRepoInput) (out *b
 		Name:         input.Name,
 		Enabled:      get.Enabled,
 		NeedGitRepo:  get.NeedGitRepo,
+		AdminOnly:    get.AdminOnly,
 		GitProjectID: lo.ToPtr(get.GitProjectID),
 		MarsConfig:   get.MarsConfig,
 		Description:  get.Description,
@@ -343,6 +349,7 @@ func (r *repoImpl) Import(ctx context.Context, items []*biz.ImportRepoItem) (cre
 					SetNillableGitProjectName(p.projName).
 					SetNillableDefaultBranch(p.defaultBranch).
 					SetEnabled(p.item.Enabled).
+					SetAdminOnly(p.item.AdminOnly).
 					SetDescription(p.item.Description).
 					SetMarsConfig(configWithHibernate(p.item.MarsConfig, nil)).
 					Save(ctx); err != nil {
@@ -359,7 +366,8 @@ func (r *repoImpl) Import(ctx context.Context, items []*biz.ImportRepoItem) (cre
 				SetNillableDefaultBranch(p.defaultBranch).
 				SetDescription(p.item.Description).
 				SetMarsConfig(configWithHibernate(p.item.MarsConfig, p.preservedHibernate)).
-				SetEnabled(p.item.Enabled)
+				SetEnabled(p.item.Enabled).
+				SetAdminOnly(p.item.AdminOnly)
 			if !p.item.NeedGitRepo {
 				up.ClearGitProjectID().ClearGitProjectName().ClearDefaultBranch()
 			}
@@ -409,6 +417,7 @@ func toRepo(data *ent.Repo) *biz.Repo {
 		GitProjectID:   data.GitProjectID,
 		Enabled:        data.Enabled,
 		NeedGitRepo:    data.NeedGitRepo,
+		AdminOnly:      data.AdminOnly,
 		MarsConfig:     data.MarsConfig,
 		Description:    data.Description,
 		Projects:       slice.Map(data.Edges.Projects, toProject),

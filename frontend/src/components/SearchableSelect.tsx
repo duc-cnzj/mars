@@ -21,8 +21,11 @@ import { Tag } from '@/components/ui'
 export interface SearchableSelectOption {
   value: string
   label: string
-  /** 选项说明（可选）：下拉行在 label 下叠一行小字；搜索同时匹配 label 与 description */
+  /** 选项说明（可选）：下拉行在 label 后同行展示；搜索同时匹配 label 与 description */
   description?: string
+  /** 醒目标记（可选）：渲染为带图标的 warn 色文字，与 description 的 accent chip 在形态与
+   *  颜色上双重区分；搜索同样匹配其文案 */
+  badge?: string
 }
 
 /**
@@ -140,7 +143,8 @@ export function SearchableSelect({
     return options.filter(
       (o) =>
         o.label.toLowerCase().includes(q) ||
-        (o.description ?? '').toLowerCase().includes(q),
+        (o.description ?? '').toLowerCase().includes(q) ||
+        (o.badge ?? '').toLowerCase().includes(q),
     )
   }, [options, query])
 
@@ -444,10 +448,17 @@ export function SearchableSelect({
                   isSel && 'font-medium',
                 )}
               >
-                {/* 有 description 时 label 后同行放一个 Tag 展示说明（chip 底色醒目），超长行内截断；
-                    无则单行。外按钮仍 items-center 整体垂直居中 */}
+                {/* label 后同行放标记与说明：badge 用 warn 色文字（不带底色，避免与 description 的
+                    accent chip 撞成「双标签」），description 仍是 accent chip，超长行内截断。
+                    外按钮仍 items-center 整体垂直居中 */}
                 <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
                   <span className="min-w-0 truncate">{o.label}</span>
+                  {o.badge && (
+                    <span className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium text-warn">
+                      <Icon name="shield" className="size-3" />
+                      {o.badge}
+                    </span>
+                  )}
                   {o.description && (
                     <Tag tone="accent" dot={false} className="min-w-0 max-w-[55%]">
                       <span className="min-w-0 truncate">{o.description}</span>

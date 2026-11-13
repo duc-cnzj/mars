@@ -235,7 +235,7 @@ func TestRepoSvc_List_Success(t *testing.T) {
 		Count:    1,
 	}, nil)
 
-	res, err := svc.List(context.TODO(), &reposerver.ListRequest{
+	res, err := svc.List(adminCtx(), &reposerver.ListRequest{
 		Page:     lo.ToPtr(int32(1)),
 		PageSize: lo.ToPtr(int32(10)),
 		Enabled:  lo.ToPtr(true),
@@ -251,6 +251,46 @@ func TestRepoSvc_List_Success(t *testing.T) {
 	assert.Equal(t, "test", res.Items[0].Name)
 }
 
+// TestRepoSvc_List_NonAdminFiltersAdminOnly 覆盖普通用户的列表口径：必须带
+// AdminOnly=false 过滤，否则 List 的 Authorize 豁免会让普通用户枚举全部仓库。
+func TestRepoSvc_List_NonAdminFiltersAdminOnly(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+
+	repoRepo.EXPECT().List(gomock.Any(), &biz.ListRepoRequest{
+		Page:          1,
+		PageSize:      15,
+		OrderByIDDesc: lo.ToPtr(true),
+		AdminOnly:     lo.ToPtr(false),
+	}).Return(nil, &pagination.Pagination{Page: 1, PageSize: 15}, nil)
+
+	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{Email: "user@x.com"})
+	// 普通用户即使显式传 admin_only=true 也不能反查管理员仓库：必须被强制收敛为 false。
+	res, err := svc.List(ctx, &reposerver.ListRequest{AdminOnly: lo.ToPtr(true)})
+
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+}
+
+// TestRepoSvc_List_AdminFiltersAdminOnly 覆盖管理端的筛选口径：admin_only 原样下传，
+// 不传时保持 nil（表示不过滤），供后台仓库管理页筛选「仅管理员可见」仓库。
+func TestRepoSvc_List_AdminFiltersAdminOnly(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+
+	repoRepo.EXPECT().List(gomock.Any(), &biz.ListRepoRequest{
+		Page:          1,
+		PageSize:      15,
+		OrderByIDDesc: lo.ToPtr(true),
+		AdminOnly:     lo.ToPtr(true),
+	}).Return(nil, &pagination.Pagination{Page: 1, PageSize: 15}, nil)
+
+	res, err := svc.List(adminCtx(), &reposerver.ListRequest{AdminOnly: lo.ToPtr(true)})
+
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+}
+
 func TestRepoSvc_List_Error(t *testing.T) {
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
@@ -263,7 +303,7 @@ func TestRepoSvc_List_Error(t *testing.T) {
 		Name:          "test",
 	}).Return(nil, nil, errors.New("error"))
 
-	res, err := svc.List(context.TODO(), &reposerver.ListRequest{
+	res, err := svc.List(adminCtx(), &reposerver.ListRequest{
 		Page:     lo.ToPtr(int32(1)),
 		PageSize: lo.ToPtr(int32(10)),
 		Enabled:  lo.ToPtr(true),
@@ -781,6 +821,7 @@ func Test_ExportImport_RoundTrip(t *testing.T) {
 		GitProjectID:   100,
 		Enabled:        true,
 		NeedGitRepo:    true,
+		AdminOnly:      true,
 		MarsConfig:     &mars.Config{ConfigField: "c", LocalChartPath: "100|main|chart"},
 		Description:    "desc",
 	}
@@ -790,6 +831,7 @@ func Test_ExportImport_RoundTrip(t *testing.T) {
 	assert.Equal(t, "app", item.Name)
 	assert.True(t, item.Enabled)
 	assert.True(t, item.NeedGitRepo)
+	assert.True(t, item.AdminOnly, "导出导入必须保住 admin_only，否则回灌后仓库会自动公开")
 	assert.Equal(t, lo.ToPtr(int32(100)), item.GitProjectID)
 	assert.Equal(t, &mars.Config{ConfigField: "c", LocalChartPath: "100|main|chart"}, item.MarsConfig)
 	assert.Equal(t, "desc", item.Description)
@@ -810,6 +852,7 @@ func Test_toImportRepoItem(t *testing.T) {
 		Name:         "app",
 		Enabled:      true,
 		NeedGitRepo:  true,
+		AdminOnly:    true,
 		GitProjectId: 100,
 		MarsConfig:   &mars.Config{ConfigField: "c"},
 		Description:  "desc",
@@ -818,6 +861,7 @@ func Test_toImportRepoItem(t *testing.T) {
 	assert.Equal(t, "app", item.Name)
 	assert.True(t, item.Enabled)
 	assert.True(t, item.NeedGitRepo)
+	assert.True(t, item.AdminOnly)
 	assert.Equal(t, lo.ToPtr(int32(100)), item.GitProjectID)
 	assert.Equal(t, &mars.Config{ConfigField: "c"}, item.MarsConfig)
 	assert.Equal(t, "desc", item.Description)
@@ -872,7 +916,7 @@ func TestRepoSvc_Authorize_ExportOne_NonAdmin(t *testing.T) {
 }
 
 // Test_repoAuditYaml 锁定审计 YAML 字段白名单：只保留业务字段
-// （name/enabled/need_git_repo/git_project_id/description/mars_config），
+// （name/enabled/need_git_repo/admin_only/git_project_id/description/mars_config），
 // 剔除服务器生成的 id/时间戳/git 项目名——否则导入/更新审计 diff 会被
 // updated_at 刷新等业务无关噪声刷屏（用户明确不关注 created_at/updated_at）。
 func Test_repoAuditYaml(t *testing.T) {
@@ -884,6 +928,7 @@ func Test_repoAuditYaml(t *testing.T) {
 			Name:           "name_4",
 			Enabled:        true,
 			NeedGitRepo:    false,
+			AdminOnly:      true,
 			GitProjectId:   0,
 			GitProjectName: "git-name",
 			Description:    "desc",
@@ -895,6 +940,7 @@ func Test_repoAuditYaml(t *testing.T) {
 	assert.Contains(t, out, "name: name_4")
 	assert.Contains(t, out, "enabled: true")
 	assert.Contains(t, out, "need_git_repo: false")
+	assert.Contains(t, out, "admin_only: true")
 	assert.Contains(t, out, "git_project_id: 0")
 	assert.Contains(t, out, "description: desc")
 	assert.Contains(t, out, "config_field: c")

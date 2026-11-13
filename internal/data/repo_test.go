@@ -458,8 +458,8 @@ func TestRepoImpl_Import_MixedCreateAndUpdate(t *testing.T) {
 	assert.Nil(t, err)
 
 	createdCount, updatedCount, err := repo.Import(context.TODO(), []*biz.ImportRepoItem{
-		{Name: "exists", Enabled: false, Description: "new"},
-		{Name: "fresh", Enabled: true, Description: "fresh desc"},
+		{Name: "exists", Enabled: false, AdminOnly: true, Description: "new"},
+		{Name: "fresh", Enabled: true, AdminOnly: true, Description: "fresh desc"},
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, createdCount)
@@ -469,11 +469,13 @@ func TestRepoImpl_Import_MixedCreateAndUpdate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, created.ID, got.ID)
 	assert.False(t, got.Enabled)
+	assert.True(t, got.AdminOnly, "更新分支必须落库 admin_only，否则导入后仓库会意外公开")
 	assert.Equal(t, "new", got.Description)
 
 	fresh, err := repo.GetByName(context.TODO(), "fresh")
 	assert.Nil(t, err)
 	assert.True(t, fresh.Enabled)
+	assert.True(t, fresh.AdminOnly, "创建分支必须落库 admin_only")
 	assert.Equal(t, "fresh desc", fresh.Description)
 }
 
@@ -968,4 +970,65 @@ func TestRepoImpl_BatchUpdateMarsConfig(t *testing.T) {
 	got, err := client.Repo.Get(context.TODO(), target.ID)
 	require.NoError(t, err)
 	assert.Nil(t, got.MarsConfig.GetHibernate())
+}
+
+// TestRepoImpl_AdminOnly_FilterAndPreserve 覆盖 admin_only 的落库、列表过滤、
+// nil 更新保值和克隆继承：
+//   - List(AdminOnly=false) 只返回公开仓库；List(AdminOnly=true) 只返回管理员仓库；
+//   - Select 白名单必须带回 AdminOnly，否则管理页开关状态恒为 false；
+//   - Update(AdminOnly=nil) 沿用库内现值（proto3 optional 语义）；
+//   - Clone 继承 admin_only，避免克隆体意外公开。
+func TestRepoImpl_AdminOnly_FilterAndPreserve(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	r := NewRepo(NewDataImpl(&NewDataParams{DB: entdb}), NewMockGitRepo(m))
+	ctx := context.TODO()
+
+	pub, err := r.Create(ctx, &biz.CreateRepoInput{Name: "pub", Enabled: true})
+	require.NoError(t, err)
+	pri, err := r.Create(ctx, &biz.CreateRepoInput{Name: "pri", Enabled: true, AdminOnly: true})
+	require.NoError(t, err)
+
+	all, _, err := r.List(ctx, &biz.ListRepoRequest{Page: 1, PageSize: 10})
+	require.NoError(t, err)
+	assert.Len(t, all, 2)
+
+	publicOnly, _, err := r.List(ctx, &biz.ListRepoRequest{Page: 1, PageSize: 10, AdminOnly: lo.ToPtr(false)})
+	require.NoError(t, err)
+	require.Len(t, publicOnly, 1)
+	assert.Equal(t, pub.ID, publicOnly[0].ID)
+	assert.False(t, publicOnly[0].AdminOnly)
+
+	adminOnly, _, err := r.List(ctx, &biz.ListRepoRequest{Page: 1, PageSize: 10, AdminOnly: lo.ToPtr(true)})
+	require.NoError(t, err)
+	require.Len(t, adminOnly, 1)
+	assert.Equal(t, pri.ID, adminOnly[0].ID)
+	assert.True(t, adminOnly[0].AdminOnly, "List 的 Select 白名单必须带回 admin_only")
+
+	// nil 更新：沿用库内 true，不被零值重置。
+	_, err = r.Update(ctx, &biz.UpdateRepoInput{ID: int32(pri.ID), Name: "pri"})
+	require.NoError(t, err)
+	got, err := r.Get(ctx, pri.ID)
+	require.NoError(t, err)
+	assert.True(t, got.AdminOnly, "Update 不传 admin_only 时必须保留原值")
+
+	// 显式 false：可以改回公开。
+	_, err = r.Update(ctx, &biz.UpdateRepoInput{ID: int32(pri.ID), Name: "pri", AdminOnly: lo.ToPtr(false)})
+	require.NoError(t, err)
+	got, err = r.Get(ctx, pri.ID)
+	require.NoError(t, err)
+	assert.False(t, got.AdminOnly)
+
+	clone, err := r.Clone(ctx, &biz.CloneRepoInput{ID: pri.ID, Name: "pri-clone"})
+	require.NoError(t, err)
+	assert.False(t, clone.AdminOnly)
+
+	// 让克隆体带上 true 再克隆一次，验证继承。
+	_, err = r.Update(ctx, &biz.UpdateRepoInput{ID: int32(pri.ID), Name: "pri", AdminOnly: lo.ToPtr(true)})
+	require.NoError(t, err)
+	clone2, err := r.Clone(ctx, &biz.CloneRepoInput{ID: pri.ID, Name: "pri-clone-2"})
+	require.NoError(t, err)
+	assert.True(t, clone2.AdminOnly, "Clone 必须继承 admin_only")
 }

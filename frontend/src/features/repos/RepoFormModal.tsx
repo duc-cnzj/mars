@@ -61,6 +61,8 @@ interface FormState {
   name: string
   description: string
   needGitRepo: boolean
+  /** 仅管理员可见：普通用户不会在新建项目的仓库下拉里看到该仓库 */
+  adminOnly: boolean
   gitProjectId: number
   branches: string[]
   pipelinePassRules: PipelinePassRule[]
@@ -81,6 +83,7 @@ const DEFAULTS: FormState = {
   name: '',
   description: '',
   needGitRepo: true,
+  adminOnly: false,
   gitProjectId: 0,
   branches: ['*'],
   pipelinePassRules: [],
@@ -225,6 +228,7 @@ export function RepoFormModal({
       name: item.name,
       description: item.description,
       needGitRepo: item.needGitRepo,
+      adminOnly: item.adminOnly,
       gitProjectId: item.gitProjectId ?? 0,
       // 未配置具体分支（空数组 = 全部）时回填为 '*'，默认「全部」
       branches: c?.branches?.length ? c.branches : ['*'],
@@ -617,6 +621,7 @@ export function RepoFormModal({
       name: form.name.trim(),
       description: form.description.trim(),
       needGitRepo: form.needGitRepo,
+      adminOnly: form.adminOnly,
       gitProjectId: form.needGitRepo ? form.gitProjectId || undefined : undefined,
       marsConfig: buildConfig(),
     }
@@ -773,6 +778,19 @@ export function RepoFormModal({
               onCheckedChange={(v) => set('needGitRepo', v)}
               aria-label={t('repos.needGitRepo')}
             />
+          </div>
+
+          {/* 仅管理员可见：普通用户的仓库下拉看不到；存量项目不受影响（详情见提示文案） */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-3">
+              <span className={labelCls}>{t('repos.adminOnly')}</span>
+              <Switch
+                checked={form.adminOnly}
+                onCheckedChange={(v) => set('adminOnly', v)}
+                aria-label={t('repos.adminOnly')}
+              />
+            </div>
+            <span className="text-[11px] text-faint">{t('repos.adminOnlyHint')}</span>
           </div>
 
           {form.needGitRepo && (

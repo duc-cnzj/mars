@@ -151,6 +151,20 @@ func (_u *RepoUpdate) SetNillableEnabled(v *bool) *RepoUpdate {
 	return _u
 }
 
+// SetAdminOnly sets the "admin_only" field.
+func (_u *RepoUpdate) SetAdminOnly(v bool) *RepoUpdate {
+	_u.mutation.SetAdminOnly(v)
+	return _u
+}
+
+// SetNillableAdminOnly sets the "admin_only" field if the given value is not nil.
+func (_u *RepoUpdate) SetNillableAdminOnly(v *bool) *RepoUpdate {
+	if v != nil {
+		_u.SetAdminOnly(*v)
+	}
+	return _u
+}
+
 // SetNeedGitRepo sets the "need_git_repo" field.
 func (_u *RepoUpdate) SetNeedGitRepo(v bool) *RepoUpdate {
 	_u.mutation.SetNeedGitRepo(v)
@@ -341,6 +355,9 @@ func (_u *RepoUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Enabled(); ok {
 		_spec.SetField(repo.FieldEnabled, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.AdminOnly(); ok {
+		_spec.SetField(repo.FieldAdminOnly, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.NeedGitRepo(); ok {
 		_spec.SetField(repo.FieldNeedGitRepo, field.TypeBool, value)
@@ -536,6 +553,20 @@ func (_u *RepoUpdateOne) SetEnabled(v bool) *RepoUpdateOne {
 func (_u *RepoUpdateOne) SetNillableEnabled(v *bool) *RepoUpdateOne {
 	if v != nil {
 		_u.SetEnabled(*v)
+	}
+	return _u
+}
+
+// SetAdminOnly sets the "admin_only" field.
+func (_u *RepoUpdateOne) SetAdminOnly(v bool) *RepoUpdateOne {
+	_u.mutation.SetAdminOnly(v)
+	return _u
+}
+
+// SetNillableAdminOnly sets the "admin_only" field if the given value is not nil.
+func (_u *RepoUpdateOne) SetNillableAdminOnly(v *bool) *RepoUpdateOne {
+	if v != nil {
+		_u.SetAdminOnly(*v)
 	}
 	return _u
 }
@@ -760,6 +791,9 @@ func (_u *RepoUpdateOne) sqlSave(ctx context.Context) (_node *Repo, err error) {
 	}
 	if value, ok := _u.mutation.Enabled(); ok {
 		_spec.SetField(repo.FieldEnabled, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.AdminOnly(); ok {
+		_spec.SetField(repo.FieldAdminOnly, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.NeedGitRepo(); ok {
 		_spec.SetField(repo.FieldNeedGitRepo, field.TypeBool, value)

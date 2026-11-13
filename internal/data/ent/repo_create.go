@@ -128,6 +128,20 @@ func (_c *RepoCreate) SetNillableEnabled(v *bool) *RepoCreate {
 	return _c
 }
 
+// SetAdminOnly sets the "admin_only" field.
+func (_c *RepoCreate) SetAdminOnly(v bool) *RepoCreate {
+	_c.mutation.SetAdminOnly(v)
+	return _c
+}
+
+// SetNillableAdminOnly sets the "admin_only" field if the given value is not nil.
+func (_c *RepoCreate) SetNillableAdminOnly(v *bool) *RepoCreate {
+	if v != nil {
+		_c.SetAdminOnly(*v)
+	}
+	return _c
+}
+
 // SetNeedGitRepo sets the "need_git_repo" field.
 func (_c *RepoCreate) SetNeedGitRepo(v bool) *RepoCreate {
 	_c.mutation.SetNeedGitRepo(v)
@@ -232,6 +246,10 @@ func (_c *RepoCreate) defaults() error {
 		v := repo.DefaultEnabled
 		_c.mutation.SetEnabled(v)
 	}
+	if _, ok := _c.mutation.AdminOnly(); !ok {
+		v := repo.DefaultAdminOnly
+		_c.mutation.SetAdminOnly(v)
+	}
 	if _, ok := _c.mutation.NeedGitRepo(); !ok {
 		v := repo.DefaultNeedGitRepo
 		_c.mutation.SetNeedGitRepo(v)
@@ -266,6 +284,9 @@ func (_c *RepoCreate) check() error {
 	}
 	if _, ok := _c.mutation.Enabled(); !ok {
 		return &ValidationError{Name: "enabled", err: errors.New(`ent: missing required field "Repo.enabled"`)}
+	}
+	if _, ok := _c.mutation.AdminOnly(); !ok {
+		return &ValidationError{Name: "admin_only", err: errors.New(`ent: missing required field "Repo.admin_only"`)}
 	}
 	if _, ok := _c.mutation.NeedGitRepo(); !ok {
 		return &ValidationError{Name: "need_git_repo", err: errors.New(`ent: missing required field "Repo.need_git_repo"`)}
@@ -336,6 +357,10 @@ func (_c *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Enabled(); ok {
 		_spec.SetField(repo.FieldEnabled, field.TypeBool, value)
 		_node.Enabled = value
+	}
+	if value, ok := _c.mutation.AdminOnly(); ok {
+		_spec.SetField(repo.FieldAdminOnly, field.TypeBool, value)
+		_node.AdminOnly = value
 	}
 	if value, ok := _c.mutation.NeedGitRepo(); ok {
 		_spec.SetField(repo.FieldNeedGitRepo, field.TypeBool, value)
@@ -528,6 +553,18 @@ func (u *RepoUpsert) SetEnabled(v bool) *RepoUpsert {
 // UpdateEnabled sets the "enabled" field to the value that was provided on create.
 func (u *RepoUpsert) UpdateEnabled() *RepoUpsert {
 	u.SetExcluded(repo.FieldEnabled)
+	return u
+}
+
+// SetAdminOnly sets the "admin_only" field.
+func (u *RepoUpsert) SetAdminOnly(v bool) *RepoUpsert {
+	u.Set(repo.FieldAdminOnly, v)
+	return u
+}
+
+// UpdateAdminOnly sets the "admin_only" field to the value that was provided on create.
+func (u *RepoUpsert) UpdateAdminOnly() *RepoUpsert {
+	u.SetExcluded(repo.FieldAdminOnly)
 	return u
 }
 
@@ -748,6 +785,20 @@ func (u *RepoUpsertOne) SetEnabled(v bool) *RepoUpsertOne {
 func (u *RepoUpsertOne) UpdateEnabled() *RepoUpsertOne {
 	return u.Update(func(s *RepoUpsert) {
 		s.UpdateEnabled()
+	})
+}
+
+// SetAdminOnly sets the "admin_only" field.
+func (u *RepoUpsertOne) SetAdminOnly(v bool) *RepoUpsertOne {
+	return u.Update(func(s *RepoUpsert) {
+		s.SetAdminOnly(v)
+	})
+}
+
+// UpdateAdminOnly sets the "admin_only" field to the value that was provided on create.
+func (u *RepoUpsertOne) UpdateAdminOnly() *RepoUpsertOne {
+	return u.Update(func(s *RepoUpsert) {
+		s.UpdateAdminOnly()
 	})
 }
 
@@ -1141,6 +1192,20 @@ func (u *RepoUpsertBulk) SetEnabled(v bool) *RepoUpsertBulk {
 func (u *RepoUpsertBulk) UpdateEnabled() *RepoUpsertBulk {
 	return u.Update(func(s *RepoUpsert) {
 		s.UpdateEnabled()
+	})
+}
+
+// SetAdminOnly sets the "admin_only" field.
+func (u *RepoUpsertBulk) SetAdminOnly(v bool) *RepoUpsertBulk {
+	return u.Update(func(s *RepoUpsert) {
+		s.SetAdminOnly(v)
+	})
+}
+
+// UpdateAdminOnly sets the "admin_only" field to the value that was provided on create.
+func (u *RepoUpsertBulk) UpdateAdminOnly() *RepoUpsertBulk {
+	return u.Update(func(s *RepoUpsert) {
+		s.UpdateAdminOnly()
 	})
 }
 

@@ -31,6 +31,8 @@ const (
 	FieldGitProjectID = "git_project_id"
 	// FieldEnabled holds the string denoting the enabled field in the database.
 	FieldEnabled = "enabled"
+	// FieldAdminOnly holds the string denoting the admin_only field in the database.
+	FieldAdminOnly = "admin_only"
 	// FieldNeedGitRepo holds the string denoting the need_git_repo field in the database.
 	FieldNeedGitRepo = "need_git_repo"
 	// FieldMarsConfig holds the string denoting the mars_config field in the database.
@@ -61,6 +63,7 @@ var Columns = []string{
 	FieldGitProjectName,
 	FieldGitProjectID,
 	FieldEnabled,
+	FieldAdminOnly,
 	FieldNeedGitRepo,
 	FieldMarsConfig,
 	FieldDescription,
@@ -96,6 +99,8 @@ var (
 	DefaultBranchValidator func(string) error
 	// DefaultEnabled holds the default value on creation for the "enabled" field.
 	DefaultEnabled bool
+	// DefaultAdminOnly holds the default value on creation for the "admin_only" field.
+	DefaultAdminOnly bool
 	// DefaultNeedGitRepo holds the default value on creation for the "need_git_repo" field.
 	DefaultNeedGitRepo bool
 	// DefaultDescription holds the default value on creation for the "description" field.
@@ -148,6 +153,11 @@ func ByGitProjectID(opts ...sql.OrderTermOption) OrderOption {
 // ByEnabled orders the results by the enabled field.
 func ByEnabled(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEnabled, opts...).ToFunc()
+}
+
+// ByAdminOnly orders the results by the admin_only field.
+func ByAdminOnly(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAdminOnly, opts...).ToFunc()
 }
 
 // ByNeedGitRepo orders the results by the need_git_repo field.

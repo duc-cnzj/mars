@@ -46,16 +46,25 @@ func NewRepoSvc(deps RepoSvcDeps) reposerver.RepoServer {
 	}
 }
 
-// List 分页列出仓库，支持按名称与启用状态过滤，按 id 倒序返回。
+// List 分页列出仓库，支持按名称、启用状态与「仅管理员可见」过滤，按 id 倒序返回。
+// 非管理员强制只返回公开仓库（忽略其传入的 admin_only 参数），避免枚举管理员仓库。
 func (r *repoSvc) List(ctx context.Context, request *reposerver.ListRequest) (*reposerver.ListResponse, error) {
 	page, pageSize := pagination.InitByDefault(request.Page, request.PageSize)
 
+	// 管理员可按 admin_only 过滤（不传=全部）；非管理员无论传什么都被强制收敛为
+	// admin_only=false。List 在 Authorize 里豁免了 admin 校验，不收窄会让普通用户
+	// 枚举全部仓库，或用 admin_only=true 反查管理员仓库。
+	adminOnly := request.AdminOnly
+	if !biz.MustGetUser(ctx).IsAdmin() {
+		adminOnly = lo.ToPtr(false)
+	}
 	list, pag, err := r.repoBiz.List(ctx, &biz.ListRepoRequest{
 		Page:          page,
 		PageSize:      pageSize,
 		Enabled:       request.Enabled,
 		OrderByIDDesc: lo.ToPtr(true),
 		Name:          request.Name,
+		AdminOnly:     adminOnly,
 	})
 	if err != nil {
 		return nil, logError(ctx, r.logger, err)
@@ -74,6 +83,7 @@ func (r *repoSvc) Create(ctx context.Context, req *reposerver.CreateRequest) (*r
 		Name:         req.Name,
 		Enabled:      true,
 		NeedGitRepo:  req.NeedGitRepo,
+		AdminOnly:    req.AdminOnly,
 		GitProjectID: req.GitProjectId,
 		MarsConfig:   req.MarsConfig,
 		Description:  req.Description,
@@ -115,6 +125,7 @@ func (r *repoSvc) Update(ctx context.Context, req *reposerver.UpdateRequest) (*r
 		ID:           req.Id,
 		Name:         req.Name,
 		NeedGitRepo:  req.NeedGitRepo,
+		AdminOnly:    req.AdminOnly,
 		GitProjectID: req.GitProjectId,
 		MarsConfig:   req.MarsConfig,
 		Description:  req.Description,
@@ -321,7 +332,7 @@ func (r *repoSvc) Import(ctx context.Context, req *reposerver.ImportRequest) (*r
 }
 
 // repoAuditYaml 把 repo 状态序列化成审计日志 YAML：只保留业务字段
-// （name/enabled/need_git_repo/git_project_id/description/mars_config），
+// （name/enabled/need_git_repo/admin_only/git_project_id/description/mars_config），
 // 剔除服务器生成的 id/时间戳/git 项目名，避免导入/更新审计 diff
 // 出现与业务无关的噪声（如 updated_at 一刷新整个列表看着都变了）。
 func repoAuditYaml(repos []*types.RepoModel) string {
@@ -330,6 +341,7 @@ func repoAuditYaml(repos []*types.RepoModel) string {
 			"name":           m.Name,
 			"enabled":        m.Enabled,
 			"need_git_repo":  m.NeedGitRepo,
+			"admin_only":     m.AdminOnly,
 			"git_project_id": m.GitProjectId,
 			"description":    m.Description,
 			"mars_config":    m.MarsConfig,
@@ -348,6 +360,7 @@ func toImportRepoItem(m *types.RepoModel) *biz.ImportRepoItem {
 		Name:        m.Name,
 		Enabled:     m.Enabled,
 		NeedGitRepo: m.NeedGitRepo,
+		AdminOnly:   m.AdminOnly,
 		MarsConfig:  m.MarsConfig,
 		Description: m.Description,
 	}

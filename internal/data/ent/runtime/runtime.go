@@ -488,12 +488,16 @@ func init() {
 	repoDescEnabled := repoFields[4].Descriptor()
 	// repo.DefaultEnabled holds the default value on creation for the enabled field.
 	repo.DefaultEnabled = repoDescEnabled.Default.(bool)
+	// repoDescAdminOnly is the schema descriptor for admin_only field.
+	repoDescAdminOnly := repoFields[5].Descriptor()
+	// repo.DefaultAdminOnly holds the default value on creation for the admin_only field.
+	repo.DefaultAdminOnly = repoDescAdminOnly.Default.(bool)
 	// repoDescNeedGitRepo is the schema descriptor for need_git_repo field.
-	repoDescNeedGitRepo := repoFields[5].Descriptor()
+	repoDescNeedGitRepo := repoFields[6].Descriptor()
 	// repo.DefaultNeedGitRepo holds the default value on creation for the need_git_repo field.
 	repo.DefaultNeedGitRepo = repoDescNeedGitRepo.Default.(bool)
 	// repoDescDescription is the schema descriptor for description field.
-	repoDescDescription := repoFields[7].Descriptor()
+	repoDescDescription := repoFields[8].Descriptor()
 	// repo.DefaultDescription holds the default value on creation for the description field.
 	repo.DefaultDescription = repoDescDescription.Default.(string)
 	userMixin := schema.User{}.Mixin()

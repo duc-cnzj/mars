@@ -42,6 +42,9 @@ func (Repo) Fields() []ent.Field {
 			Comment("关联的 git 项目 id"),
 		field.Bool("enabled").
 			Default(false),
+		field.Bool("admin_only").
+			Default(false).
+			Comment("仅管理员可见：普通用户不出现在新建项目的仓库下拉里"),
 		field.Bool("need_git_repo").
 			Default(false),
 		field.JSON("mars_config", &mars.Config{}).

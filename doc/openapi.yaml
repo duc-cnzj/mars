@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
     title: mars api.
-    version: ""
+    version: api/v6.4.0
 paths:
     /api/access_tokens:
         get:
@@ -2519,6 +2519,13 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: adminOnly
+                  in: query
+                  description: |-
+                    admin_only 按「仅管理员可见」过滤：不传=不过滤（管理端默认全部）。
+                     仅管理员生效；非管理员无论传什么都会被强制收敛为 false，避免反查管理员仓库。
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     description: OK
@@ -3332,6 +3339,11 @@ components:
                     type: boolean
                 description:
                     type: string
+                adminOnly:
+                    type: boolean
+                    description: |-
+                        admin_only 为 true 时该仓库仅管理员可见：前端在仓库下拉里对它做标记
+                        （普通用户本就不会收到该项，见 ProjectOptions 的服务端过滤）。
         git.PipelineInfoResponse:
             type: object
             properties:
@@ -4426,6 +4438,9 @@ components:
                     type: boolean
                 description:
                     type: string
+                adminOnly:
+                    type: boolean
+                    description: admin_only 为 true 时该仓库仅管理员可见：普通用户不会在新建项目的仓库下拉里看到它。
         repo.CreateResponse:
             type: object
             properties:
@@ -4528,6 +4543,11 @@ components:
                     type: boolean
                 description:
                     type: string
+                adminOnly:
+                    type: boolean
+                    description: |-
+                        用 optional 保留字段存在性：老客户端/局部更新不传时沿用库内现值，避免被 proto3
+                         bool 的零值静默重置为「公开」。
         repo.UpdateResponse:
             type: object
             properties:
@@ -4963,6 +4983,9 @@ components:
                     type: boolean
                 description:
                     type: string
+                adminOnly:
+                    type: boolean
+                    description: admin_only 为 true 时该仓库仅管理员可见（普通用户不出现在新建项目的仓库下拉里）。
                 createdAt:
                     type: string
                 updatedAt:

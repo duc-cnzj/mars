@@ -404,3 +404,85 @@ func TestApplyProject_CtxCancelStopsJob(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Same(t, job, got)
 }
+
+// TestApplyProject_AdminOnlyRepoBlocksCreate 覆盖「仅管理员仓库」的创建拦截：
+// 非 admin + ProjectID==0（首次创建）必须拒绝，且不得进入 Job 装配。
+func TestApplyProject_AdminOnlyRepoBlocksCreate(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
+
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(pubNs(), nil)
+	repo.EXPECT().Get(gomock.Any(), 2).Return(&biz.Repo{ID: 2, Name: "app", AdminOnly: true}, nil)
+
+	job, err := ApplyProject(context.Background(), applyDepsOf(nsRepo, repo, git, proj, jobMgr, NewMockDeployMsger(ctrl)), &ApplyProjectInput{JobInput: baseJobInput()})
+	assert.Nil(t, job)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	assert.ErrorContains(t, err, "仅管理员")
+}
+
+// TestApplyProject_AdminOnlyRepoAllowsExistingProject 回归：已有项目（ProjectID 已定位）
+// 绑定到「仅管理员仓库」时，非 admin 仍可重新部署——改可见性不得打断存量项目。
+func TestApplyProject_AdminOnlyRepoAllowsExistingProject(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
+	job := NewMockJob(ctrl)
+
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(pubNs(), nil)
+	repo.EXPECT().Get(gomock.Any(), 2).Return(&biz.Repo{ID: 2, Name: "app", AdminOnly: true}, nil)
+	jobMgr.EXPECT().NewJob(gomock.Any()).Return(job)
+	expectInstallChain(job, nil)
+
+	input := baseJobInput()
+	input.ProjectID = 7
+	got, err := ApplyProject(context.Background(), applyDepsOf(nsRepo, repo, git, proj, jobMgr, NewMockDeployMsger(ctrl)), &ApplyProjectInput{JobInput: input})
+	assert.NoError(t, err)
+	assert.Same(t, job, got)
+}
+
+// TestApplyProject_AdminOnlyRepoAllowsExistingProjectViaVersionLookup 是真正的回归保护：
+// gRPC/WebApply 更新路径不直接传 ProjectID，而是靠 Version>0 反查回填——必须证明
+// 可见性拦截位于反查之后，否则「仓库改成仅管理员可见」会打断存量项目的重新部署。
+func TestApplyProject_AdminOnlyRepoAllowsExistingProjectViaVersionLookup(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
+	job := NewMockJob(ctrl)
+
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(pubNs(), nil)
+	repo.EXPECT().Get(gomock.Any(), 2).Return(&biz.Repo{ID: 2, Name: "app", AdminOnly: true}, nil)
+	proj.EXPECT().FindByName(gomock.Any(), "app", 1).Return(&biz.Project{ID: 7}, nil)
+	jobMgr.EXPECT().NewJob(gomock.Any()).DoAndReturn(func(in *JobInput) Job {
+		// 反查发生在可见性判定之前：到达 Job 装配时 ProjectID 必须已回填为 7。
+		assert.Equal(t, int32(7), in.ProjectID, "版本反查必须先于可见性拦截回填 ProjectID")
+		return job
+	})
+	expectInstallChain(job, nil)
+
+	input := baseJobInput()
+	v := int32(3)
+	input.Version = &v
+	got, err := ApplyProject(context.Background(), applyDepsOf(nsRepo, repo, git, proj, jobMgr, NewMockDeployMsger(ctrl)), &ApplyProjectInput{JobInput: input})
+	assert.NoError(t, err)
+	assert.Same(t, job, got)
+}
+
+// TestApplyProject_AdminOnlyRepoAllowsAdminCreate 覆盖管理员创建：admin_only 对管理员不设限。
+func TestApplyProject_AdminOnlyRepoAllowsAdminCreate(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
+	job := NewMockJob(ctrl)
+
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(pubNs(), nil)
+	repo.EXPECT().Get(gomock.Any(), 2).Return(&biz.Repo{ID: 2, Name: "app", AdminOnly: true}, nil)
+	jobMgr.EXPECT().NewJob(gomock.Any()).Return(job)
+	expectInstallChain(job, nil)
+
+	input := baseJobInput()
+	input.User = &biz.UserInfo{Email: "admin@mars.local", Roles: []string{biz.MarsAdmin}}
+	got, err := ApplyProject(context.Background(), applyDepsOf(nsRepo, repo, git, proj, jobMgr, NewMockDeployMsger(ctrl)), &ApplyProjectInput{JobInput: input})
+	assert.NoError(t, err)
+	assert.Same(t, job, got)
+}

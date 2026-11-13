@@ -35,6 +35,8 @@ type Repo struct {
 	GitProjectID int32 `json:"git_project_id,omitempty"`
 	// Enabled holds the value of the "enabled" field.
 	Enabled bool `json:"enabled,omitempty"`
+	// 仅管理员可见：普通用户不出现在新建项目的仓库下拉里
+	AdminOnly bool `json:"admin_only,omitempty"`
 	// NeedGitRepo holds the value of the "need_git_repo" field.
 	NeedGitRepo bool `json:"need_git_repo,omitempty"`
 	// mars 配置
@@ -72,7 +74,7 @@ func (*Repo) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case repo.FieldMarsConfig:
 			values[i] = new([]byte)
-		case repo.FieldEnabled, repo.FieldNeedGitRepo:
+		case repo.FieldEnabled, repo.FieldAdminOnly, repo.FieldNeedGitRepo:
 			values[i] = new(sql.NullBool)
 		case repo.FieldID, repo.FieldGitProjectID:
 			values[i] = new(sql.NullInt64)
@@ -149,6 +151,12 @@ func (_m *Repo) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field enabled", values[i])
 			} else if value.Valid {
 				_m.Enabled = value.Bool
+			}
+		case repo.FieldAdminOnly:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field admin_only", values[i])
+			} else if value.Valid {
+				_m.AdminOnly = value.Bool
 			}
 		case repo.FieldNeedGitRepo:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -236,6 +244,9 @@ func (_m *Repo) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("enabled=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Enabled))
+	builder.WriteString(", ")
+	builder.WriteString("admin_only=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AdminOnly))
 	builder.WriteString(", ")
 	builder.WriteString("need_git_repo=")
 	builder.WriteString(fmt.Sprintf("%v", _m.NeedGitRepo))

@@ -68,8 +68,15 @@ func (g *gitSvc) AllRepos(ctx context.Context, req *git.AllReposRequest) (*git.A
 }
 
 // ProjectOptions 返回已启用的 repo 项目，作为部署表单的 project 级下拉选项。
+// 普通用户只返回公开仓库（admin_only=false），管理员不过滤。
 func (g *gitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptionsRequest) (*git.ProjectOptionsResponse, error) {
-	all, err := g.repoBiz.All(ctx, &biz.AllRepoRequest{Enabled: lo.ToPtr(true)})
+	in := &biz.AllRepoRequest{Enabled: lo.ToPtr(true)}
+	// 普通用户的部署表单下拉只展示公开仓库；管理员不过滤。
+	// 这是「发现层」过滤，创建请求的服务端硬拦截在 deploy.ApplyProject。
+	if !biz.MustGetUser(ctx).IsAdmin() {
+		in.AdminOnly = lo.ToPtr(false)
+	}
+	all, err := g.repoBiz.All(ctx, in)
 	if err != nil {
 		return nil, logError(ctx, g.logger, err)
 	}
@@ -82,6 +89,7 @@ func (g *gitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptions
 			IsLeaf:       false,
 			GitProjectId: repo.GitProjectID,
 			NeedGitRepo:  repo.NeedGitRepo,
+			AdminOnly:    repo.AdminOnly,
 			Description:  repo.Description,
 		})
 	}

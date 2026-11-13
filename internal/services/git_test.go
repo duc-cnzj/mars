@@ -61,9 +61,33 @@ func Test_gitSvc_ProjectOptions(t *testing.T) {
 	repoRepo := mocks.repoRepo
 
 	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{Enabled: lo.ToPtr(true)}).Return(nil, errors.New("error"))
-	options, err := svc.ProjectOptions(context.TODO(), nil)
+	options, err := svc.ProjectOptions(adminCtx(), nil)
 	assert.Nil(t, options)
 	assert.NotNil(t, err)
+}
+
+// adminCtx 返回注入了管理员身份的 ctx：ProjectOptions 会按用户身份决定是否过滤管理员仓库。
+func adminCtx() context.Context {
+	return biz.SetUser(context.TODO(), &biz.UserInfo{Roles: []string{biz.MarsAdmin}})
+}
+
+// Test_gitSvc_ProjectOptions_NonAdminFiltersAdminOnly 覆盖普通用户的过滤口径：
+// 仓库下拉必须带上 AdminOnly=false 的过滤，禁止把仅管理员仓库暴露给普通用户。
+func Test_gitSvc_ProjectOptions_NonAdminFiltersAdminOnly(t *testing.T) {
+	svc, mocks := newGitSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+
+	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{
+		Enabled:   lo.ToPtr(true),
+		AdminOnly: lo.ToPtr(false),
+	}).Return([]*biz.Repo{
+		{ID: 2, Name: "public"},
+	}, nil)
+	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{Email: "user@x.com"})
+	options, err := svc.ProjectOptions(ctx, nil)
+	assert.Nil(t, err)
+	assert.Len(t, options.Items, 1)
+	assert.Equal(t, "public", options.Items[0].Label)
 }
 
 func Test_gitSvc_ProjectOptions_Success(t *testing.T) {
@@ -76,10 +100,11 @@ func Test_gitSvc_ProjectOptions_Success(t *testing.T) {
 			Name:         "a",
 			GitProjectID: 11,
 			NeedGitRepo:  true,
+			AdminOnly:    true,
 			Description:  "desc",
 		},
 	}, nil)
-	options, err := svc.ProjectOptions(context.TODO(), nil)
+	options, err := svc.ProjectOptions(adminCtx(), nil)
 	assert.Nil(t, err)
 	assert.NotNil(t, options)
 	assert.Equal(t, 1, len(options.Items))
@@ -89,6 +114,7 @@ func Test_gitSvc_ProjectOptions_Success(t *testing.T) {
 	assert.Equal(t, false, options.Items[0].IsLeaf)
 	assert.Equal(t, int32(11), options.Items[0].GitProjectId)
 	assert.Equal(t, true, options.Items[0].NeedGitRepo)
+	assert.Equal(t, true, options.Items[0].AdminOnly, "管理员可见标记必须随选项下发给前端")
 	assert.Equal(t, "desc", options.Items[0].Description)
 }
 

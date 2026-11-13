@@ -376,6 +376,7 @@ var (
 		{Name: "git_project_name", Type: field.TypeString, Nullable: true},
 		{Name: "git_project_id", Type: field.TypeInt32, Nullable: true},
 		{Name: "enabled", Type: field.TypeBool, Default: false},
+		{Name: "admin_only", Type: field.TypeBool, Default: false},
 		{Name: "need_git_repo", Type: field.TypeBool, Default: false},
 		{Name: "mars_config", Type: field.TypeJSON, Nullable: true},
 		{Name: "description", Type: field.TypeString, Default: ""},

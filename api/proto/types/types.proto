@@ -247,6 +247,8 @@ message RepoModel {
   mars.Config mars_config      = 6;
   bool        need_git_repo    = 7;
   string      description      = 8;
+  // admin_only 为 true 时该仓库仅管理员可见（普通用户不出现在新建项目的仓库下拉里）。
+  bool        admin_only       = 10;
 
   string      created_at       = 100;
   string      updated_at       = 101;

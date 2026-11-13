@@ -18,6 +18,7 @@ func FromRepo(repo *biz.Repo) *types.RepoModel {
 		GitProjectId:   repo.GitProjectID,
 		GitProjectName: repo.GitProjectName,
 		Enabled:        repo.Enabled,
+		AdminOnly:      repo.AdminOnly,
 		MarsConfig:     repo.GetMarsConfig(),
 		NeedGitRepo:    repo.NeedGitRepo,
 		Description:    repo.Description,

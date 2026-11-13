@@ -26,15 +26,18 @@ const (
 )
 
 type Option struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Value         string                 `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
-	Label         string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
-	Type          string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
-	IsLeaf        bool                   `protobuf:"varint,4,opt,name=is_leaf,json=isLeaf,proto3" json:"is_leaf,omitempty"`
-	GitProjectId  int32                  `protobuf:"varint,5,opt,name=git_project_id,json=gitProjectId,proto3" json:"git_project_id,omitempty"`
-	Branch        string                 `protobuf:"bytes,6,opt,name=branch,proto3" json:"branch,omitempty"`
-	NeedGitRepo   bool                   `protobuf:"varint,7,opt,name=need_git_repo,json=needGitRepo,proto3" json:"need_git_repo,omitempty"`
-	Description   string                 `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Value        string                 `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	Label        string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
+	Type         string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
+	IsLeaf       bool                   `protobuf:"varint,4,opt,name=is_leaf,json=isLeaf,proto3" json:"is_leaf,omitempty"`
+	GitProjectId int32                  `protobuf:"varint,5,opt,name=git_project_id,json=gitProjectId,proto3" json:"git_project_id,omitempty"`
+	Branch       string                 `protobuf:"bytes,6,opt,name=branch,proto3" json:"branch,omitempty"`
+	NeedGitRepo  bool                   `protobuf:"varint,7,opt,name=need_git_repo,json=needGitRepo,proto3" json:"need_git_repo,omitempty"`
+	Description  string                 `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
+	// admin_only 为 true 时该仓库仅管理员可见：前端在仓库下拉里对它做标记
+	// （普通用户本就不会收到该项，见 ProjectOptions 的服务端过滤）。
+	AdminOnly     bool `protobuf:"varint,9,opt,name=admin_only,json=adminOnly,proto3" json:"admin_only,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -123,6 +126,13 @@ func (x *Option) GetDescription() string {
 		return x.Description
 	}
 	return ""
+}
+
+func (x *Option) GetAdminOnly() bool {
+	if x != nil {
+		return x.AdminOnly
+	}
+	return false
 }
 
 type ProjectOptionsRequest struct {
@@ -1205,7 +1215,7 @@ var File_proto_git_git_proto protoreflect.FileDescriptor
 
 const file_proto_git_git_proto_rawDesc = "" +
 	"\n" +
-	"\x13proto/git/git.proto\x12\x03git\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x17validate/validate.proto\x1a\x1copenapi/v3/annotations.proto\"\xe5\x01\n" +
+	"\x13proto/git/git.proto\x12\x03git\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x17validate/validate.proto\x1a\x1copenapi/v3/annotations.proto\"\x84\x02\n" +
 	"\x06Option\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x12\n" +
@@ -1214,7 +1224,9 @@ const file_proto_git_git_proto_rawDesc = "" +
 	"\x0egit_project_id\x18\x05 \x01(\x05R\fgitProjectId\x12\x16\n" +
 	"\x06branch\x18\x06 \x01(\tR\x06branch\x12\"\n" +
 	"\rneed_git_repo\x18\a \x01(\bR\vneedGitRepo\x12 \n" +
-	"\vdescription\x18\b \x01(\tR\vdescription\"\x17\n" +
+	"\vdescription\x18\b \x01(\tR\vdescription\x12\x1d\n" +
+	"\n" +
+	"admin_only\x18\t \x01(\bR\tadminOnly\"\x17\n" +
 	"\x15ProjectOptionsRequest\";\n" +
 	"\x16ProjectOptionsResponse\x12!\n" +
 	"\x05items\x18\x01 \x03(\v2\v.git.OptionR\x05items\"^\n" +

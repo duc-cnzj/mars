@@ -593,3 +593,30 @@ func Test_messageSender_Current(t *testing.T) {
 	ms.Add()
 	assert.Equal(t, int64(1), ms.Current())
 }
+
+// TestWebsocketManager_HandleCreateProject_AdminOnlyDeniedSendsErrorFrame 回归：
+// 仅管理员仓库的创建拦截发生在 Job 装配之前，runner 不会发结果帧；installProject
+// 必须补一条 SendEndError，否则客户端只看到"部署转圈无反馈"。
+func TestWebsocketManager_HandleCreateProject_AdminOnlyDeniedSendsErrorFrame(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	nsBiz := biz.NewMockNamespaceBiz(m)
+	repoBiz := biz.NewMockRepoBiz(m)
+	sub := app.NewMockPubSub(m)
+	// 拒绝必须回错误帧（ToSelf）；若实现误触达 Job 装配，jobManager 为空会 panic。
+	sub.EXPECT().ToSelf(gomock.Any())
+
+	wm := &websocketManager{
+		logger:    mlog.NewForConfig(nil),
+		accessBiz: biz.NewAccessBiz(nsBiz, nil),
+		repoBiz:   repoBiz,
+	}
+	conn := &wsConn{pubSub: sub, user: &biz.UserInfo{ID: "2", Name: "u", Email: "u@mars.com"}}
+	nsBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns-1", Private: false}, nil)
+	repoBiz.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{Name: "secret", ID: 2, AdminOnly: true}, nil)
+
+	input := &websocket_pb.CreateProjectInput{Type: WsCreateProject, NamespaceId: 1, RepoId: 1}
+	marshal, _ := proto.Marshal(input)
+	wm.HandleCreateProject(context.TODO(), conn, WsCreateProject, marshal)
+}

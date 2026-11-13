@@ -95,6 +95,11 @@ func Enabled(v bool) predicate.Repo {
 	return predicate.Repo(sql.FieldEQ(FieldEnabled, v))
 }
 
+// AdminOnly applies equality check predicate on the "admin_only" field. It's identical to AdminOnlyEQ.
+func AdminOnly(v bool) predicate.Repo {
+	return predicate.Repo(sql.FieldEQ(FieldAdminOnly, v))
+}
+
 // NeedGitRepo applies equality check predicate on the "need_git_repo" field. It's identical to NeedGitRepoEQ.
 func NeedGitRepo(v bool) predicate.Repo {
 	return predicate.Repo(sql.FieldEQ(FieldNeedGitRepo, v))
@@ -508,6 +513,16 @@ func EnabledEQ(v bool) predicate.Repo {
 // EnabledNEQ applies the NEQ predicate on the "enabled" field.
 func EnabledNEQ(v bool) predicate.Repo {
 	return predicate.Repo(sql.FieldNEQ(FieldEnabled, v))
+}
+
+// AdminOnlyEQ applies the EQ predicate on the "admin_only" field.
+func AdminOnlyEQ(v bool) predicate.Repo {
+	return predicate.Repo(sql.FieldEQ(FieldAdminOnly, v))
+}
+
+// AdminOnlyNEQ applies the NEQ predicate on the "admin_only" field.
+func AdminOnlyNEQ(v bool) predicate.Repo {
+	return predicate.Repo(sql.FieldNEQ(FieldAdminOnly, v))
 }
 
 // NeedGitRepoEQ applies the EQ predicate on the "need_git_repo" field.

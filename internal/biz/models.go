@@ -522,8 +522,11 @@ type Repo struct {
 	GitProjectID   int32
 	Enabled        bool
 	NeedGitRepo    bool
-	MarsConfig     *mars.Config `json:"mars_config"`
-	Description    string
+	// AdminOnly 为 true 时该仓库仅管理员可见：普通用户不会在新建项目的仓库下拉里看到它。
+	// 这是「发现/新建」级别的可见性，不改变已有项目与运行期操作的访问。
+	AdminOnly   bool
+	MarsConfig  *mars.Config `json:"mars_config"`
+	Description string
 
 	Projects []*Project
 }
@@ -542,6 +545,9 @@ type AllRepoRequest struct {
 	NeedGitRepo   *bool
 	Enabled       *bool
 	OrderByIDDesc *bool
+	// AdminOnly 按「仅管理员可见」过滤：nil 不过滤（管理端/导出），false 只取公开仓库
+	// （普通用户的仓库下拉），true 只取管理员仓库。
+	AdminOnly *bool
 }
 
 // ListRepoRequest 是仓库分页列表输入。
@@ -550,6 +556,8 @@ type ListRepoRequest struct {
 	Enabled        *bool
 	Name           string
 	OrderByIDDesc  *bool
+	// AdminOnly 含义同 AllRepoRequest：nil 不过滤，false 只取公开仓库（普通用户）。
+	AdminOnly *bool
 }
 
 // CreateRepoInput 是创建仓库的输入。
@@ -557,6 +565,7 @@ type CreateRepoInput struct {
 	Name         string
 	Enabled      bool
 	NeedGitRepo  bool
+	AdminOnly    bool
 	GitProjectID *int32
 	MarsConfig   *mars.Config
 	Description  string
@@ -564,9 +573,12 @@ type CreateRepoInput struct {
 
 // UpdateRepoInput 是更新仓库的输入。
 type UpdateRepoInput struct {
-	ID           int32
-	Name         string
-	NeedGitRepo  bool
+	ID          int32
+	Name        string
+	NeedGitRepo bool
+	// AdminOnly 为 nil 时沿用库内现值（proto3 optional），避免局部更新/老客户端
+	// 不传字段时被零值静默重置为公开。
+	AdminOnly    *bool
 	GitProjectID *int32
 	MarsConfig   *mars.Config
 	Description  string
@@ -584,6 +596,7 @@ type ImportRepoItem struct {
 	Name         string
 	Enabled      bool
 	NeedGitRepo  bool
+	AdminOnly    bool
 	GitProjectID *int32
 	MarsConfig   *mars.Config
 	Description  string

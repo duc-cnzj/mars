@@ -1861,6 +1861,11 @@ export interface components {
             branch: string;
             needGitRepo: boolean;
             description: string;
+            /**
+             * @description admin_only 为 true 时该仓库仅管理员可见：前端在仓库下拉里对它做标记
+             *     （普通用户本就不会收到该项，见 ProjectOptions 的服务端过滤）。
+             */
+            adminOnly: boolean;
         };
         "git.PipelineInfoResponse": {
             /**
@@ -2538,6 +2543,8 @@ export interface components {
             marsConfig?: components["schemas"]["mars.Config"];
             needGitRepo?: boolean;
             description?: string;
+            /** @description admin_only 为 true 时该仓库仅管理员可见：普通用户不会在新建项目的仓库下拉里看到它。 */
+            adminOnly?: boolean;
         };
         "repo.CreateResponse": {
             item: components["schemas"]["types.RepoModel"];
@@ -2594,6 +2601,11 @@ export interface components {
             marsConfig?: components["schemas"]["mars.Config"];
             needGitRepo?: boolean;
             description?: string;
+            /**
+             * @description 用 optional 保留字段存在性：老客户端/局部更新不传时沿用库内现值，避免被 proto3
+             *      bool 的零值静默重置为「公开」。
+             */
+            adminOnly?: boolean;
         };
         "repo.UpdateResponse": {
             item: components["schemas"]["types.RepoModel"];
@@ -2822,6 +2834,8 @@ export interface components {
             marsConfig: components["schemas"]["mars.Config"];
             needGitRepo: boolean;
             description: string;
+            /** @description admin_only 为 true 时该仓库仅管理员可见（普通用户不出现在新建项目的仓库下拉里）。 */
+            adminOnly: boolean;
             createdAt: string;
             updatedAt: string;
             deletedAt: string;
@@ -5709,6 +5723,11 @@ export interface operations {
                 pageSize?: number;
                 enabled?: boolean;
                 name?: string;
+                /**
+                 * @description admin_only 按「仅管理员可见」过滤：不传=不过滤（管理端默认全部）。
+                 *      仅管理员生效；非管理员无论传什么都会被强制收敛为 false，避免反查管理员仓库。
+                 */
+                adminOnly?: boolean;
             };
             header?: never;
             path?: never;

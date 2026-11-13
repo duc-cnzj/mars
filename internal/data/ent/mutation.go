@@ -11801,6 +11801,7 @@ type RepoMutation struct {
 	git_project_id    *int32
 	addgit_project_id *int32
 	enabled           *bool
+	admin_only        *bool
 	need_git_repo     *bool
 	mars_config       **mars.Config
 	description       *string
@@ -12272,6 +12273,42 @@ func (m *RepoMutation) ResetEnabled() {
 	m.enabled = nil
 }
 
+// SetAdminOnly sets the "admin_only" field.
+func (m *RepoMutation) SetAdminOnly(b bool) {
+	m.admin_only = &b
+}
+
+// AdminOnly returns the value of the "admin_only" field in the mutation.
+func (m *RepoMutation) AdminOnly() (r bool, exists bool) {
+	v := m.admin_only
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAdminOnly returns the old "admin_only" field's value of the Repo entity.
+// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepoMutation) OldAdminOnly(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAdminOnly is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAdminOnly requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAdminOnly: %w", err)
+	}
+	return oldValue.AdminOnly, nil
+}
+
+// ResetAdminOnly resets all changes to the "admin_only" field.
+func (m *RepoMutation) ResetAdminOnly() {
+	m.admin_only = nil
+}
+
 // SetNeedGitRepo sets the "need_git_repo" field.
 func (m *RepoMutation) SetNeedGitRepo(b bool) {
 	m.need_git_repo = &b
@@ -12481,7 +12518,7 @@ func (m *RepoMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RepoMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, repo.FieldCreatedAt)
 	}
@@ -12505,6 +12542,9 @@ func (m *RepoMutation) Fields() []string {
 	}
 	if m.enabled != nil {
 		fields = append(fields, repo.FieldEnabled)
+	}
+	if m.admin_only != nil {
+		fields = append(fields, repo.FieldAdminOnly)
 	}
 	if m.need_git_repo != nil {
 		fields = append(fields, repo.FieldNeedGitRepo)
@@ -12539,6 +12579,8 @@ func (m *RepoMutation) Field(name string) (ent.Value, bool) {
 		return m.GitProjectID()
 	case repo.FieldEnabled:
 		return m.Enabled()
+	case repo.FieldAdminOnly:
+		return m.AdminOnly()
 	case repo.FieldNeedGitRepo:
 		return m.NeedGitRepo()
 	case repo.FieldMarsConfig:
@@ -12570,6 +12612,8 @@ func (m *RepoMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldGitProjectID(ctx)
 	case repo.FieldEnabled:
 		return m.OldEnabled(ctx)
+	case repo.FieldAdminOnly:
+		return m.OldAdminOnly(ctx)
 	case repo.FieldNeedGitRepo:
 		return m.OldNeedGitRepo(ctx)
 	case repo.FieldMarsConfig:
@@ -12640,6 +12684,13 @@ func (m *RepoMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetEnabled(v)
+		return nil
+	case repo.FieldAdminOnly:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAdminOnly(v)
 		return nil
 	case repo.FieldNeedGitRepo:
 		v, ok := value.(bool)
@@ -12782,6 +12833,9 @@ func (m *RepoMutation) ResetField(name string) error {
 		return nil
 	case repo.FieldEnabled:
 		m.ResetEnabled()
+		return nil
+	case repo.FieldAdminOnly:
+		m.ResetAdminOnly()
 		return nil
 	case repo.FieldNeedGitRepo:
 		m.ResetNeedGitRepo()
