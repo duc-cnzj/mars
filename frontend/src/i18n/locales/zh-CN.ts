@@ -800,9 +800,13 @@ export default {
       autoApproveActive: '免确认模式已开启：AI 的写操作将直接执行，不再弹出确认条。',
       emptyTitle: '有什么可以帮你？',
       emptyHint: '可以让 AI 排查容器、查看日志或执行部署；写操作会先征求你的确认。',
-      placeholder: '描述你的问题，Enter 发送，Shift+Enter 换行',
+      placeholder: '描述你的问题，Enter 发送，Shift+Enter 换行，↑/↓ 回溯历史',
       confirmPlaceholder: '请先确认上方的写操作',
-      inputHint: '对话记录保存在本浏览器；AI 的结论请结合实际情况核对。',
+      inputHint:
+        '对话记录保存在本浏览器；AI 的结论请结合实际情况核对。命令：/new 新建对话，/clear 清除当前对话。',
+      commandHintLabel: '可用命令',
+      commandNewHint: '新建对话，当前对话保留在历史里',
+      commandClearHint: '立即删除当前会话（无需确认）',
       bindingSwitched: '已切换绑定范围，已开启新的会话（原对话保留在历史里）',
       send: '发送',
       stop: '停止',
@@ -828,6 +832,7 @@ export default {
     bindingNone: '未绑定范围',
     bindingAllProjects: '全部项目',
     bindingHint: '提问未指定范围时，AI 默认按所选空间/项目作答；切换绑定会开启新的会话',
+    bindingClear: '清除绑定',
     bindingLoadFailed: '加载空间/项目失败，请重试',
     // 固定常见问题：label 是按钮文案，Prompt 是点击后填入输入框的完整问题。
     quickPromptsLabel: '常见问题',

@@ -40,7 +40,7 @@ export interface SearchableSelectOption {
  * 选项则切换，否则新增），配合 createText 展示「回车添加」提示行。
  */
 const MAX_RENDERED = 200
-/** 多选时 trigger 里最多展示的 chip 数，超出折叠为 +N；hover +N 可查看被折叠的剩余选项 */
+/** 多选时 trigger 里最多展示的 chip 数，超出折叠为 +N；hover +N 可查看全部已选选项 */
 const MAX_TAGS = 10
 
 export function SearchableSelect({
@@ -116,6 +116,13 @@ export function SearchableSelect({
   const [tipHover, setTipHover] = useState(false)
   // tooltip content 走 portal 挂 body，须盖过可拖拽宿主弹窗的动态 z-index（同 Elements 注释）
   const [tipZ, setTipZ] = useState(50)
+  // +N 浮层：hover 展开全部已选，可逐项删除；同样需动态 z 盖过宿主弹窗
+  const [tagPopoverOpen, setTagPopoverOpen] = useState(false)
+  const [tagPopZ, setTagPopZ] = useState(50)
+  // 从 +N 移到浮层内容要跨一小段空隙：延迟关闭，进入内容即取消
+  const tagCloseTimerRef = useRef<number | null>(null)
+  // 同步镜像浮层开合：hover 在 chip 与内容间来回时不重复抬 z（重复会触发内容重挂载）
+  const tagPopoverOpenRef = useRef(false)
   // 选项滚动容器挂滚动传播截断：宿主 modal 的滚动锁会吞掉弹层内滚动（详见 useScrollPropagationGuard）
   const bindScrollList = useScrollPropagationGuard<HTMLDivElement>()
 
@@ -129,6 +136,8 @@ export function SearchableSelect({
   const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues])
   /** trigger 内展示的 chip 上限：宿主可按文本长度调小（长 `空间/项目` 场景避免撑成多行）。 */
   const tagLimit = maxTagCount ?? MAX_TAGS
+  /** 是否折叠出 +N：是则整个 trigger 作为 hover 热区，进入即展开全部已选。 */
+  const hasTagOverflow = multiple && selectedValues.length > tagLimit
   /** 值 → 展示 label（选项里没有时回退到原始值，如自定义分支/手输 stage） */
   const labelOf = (v: string) => options.find((o) => o.value === v)?.label ?? v
   /** 单选 trigger 展示文本：选中项 label 或占位符 */
@@ -136,6 +145,52 @@ export function SearchableSelect({
     selectedValues.length > 0 ? labelOf(selectedValues[0] as string) : (placeholder ?? '')
   /** 未选中：展示的是 placeholder，用 Input 同款淡色（text-ink/30），与选中值形成区分 */
   const isPlaceholder = selectedValues.length === 0
+
+  /** 取消 +N 浮层的延迟关闭。 */
+  const cancelTagClose = () => {
+    if (tagCloseTimerRef.current === null) return
+    window.clearTimeout(tagCloseTimerRef.current)
+    tagCloseTimerRef.current = null
+  }
+
+  /** 打开 +N 浮层：主选择弹层展开时不叠加第二个浮层；仅关闭态重新取 z 盖过可拖拽宿主弹窗。 */
+  const openTagPopover = () => {
+    cancelTagClose()
+    if (open || tagPopoverOpenRef.current) return
+    tagPopoverOpenRef.current = true
+    setTagPopZ(nextZIndex())
+    setTagPopoverOpen(true)
+  }
+
+  /** 关闭 +N 浮层：同步镜像 ref，否则下次 hover 会被 openTagPopover 的守卫挡掉。 */
+  const closeTagPopover = () => {
+    cancelTagClose()
+    tagPopoverOpenRef.current = false
+    setTagPopoverOpen(false)
+  }
+
+  /** 指针离开 +N 或浮层内容：延迟关闭，给指针穿过空隙进入内容的时间。 */
+  const scheduleTagClose = () => {
+    cancelTagClose()
+    tagCloseTimerRef.current = window.setTimeout(() => {
+      tagCloseTimerRef.current = null
+      tagPopoverOpenRef.current = false
+      setTagPopoverOpen(false)
+    }, 150)
+  }
+
+  /** 卸载时清掉挂起的关闭定时器。 */
+  useEffect(() => () => cancelTagClose(), [])
+
+  // 已选降到 chip 上限以内时 +N 消失，顺带收起浮层，避免下次超限时突然以展开态出现。
+  useEffect(() => {
+    if (hasTagOverflow) return
+    tagPopoverOpenRef.current = false
+    setTagPopoverOpen(false)
+  }, [hasTagOverflow])
+
+  /** 从 +N 浮层删除单个已选值（多选语义：过滤后直接提交）。 */
+  const removeValue = (v: string) => onChange(selectedValues.filter((x) => x !== v))
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -243,7 +298,11 @@ export function SearchableSelect({
       onOpenChange={(o) => {
         // 打开时重取 z-index：可拖拽宿主弹窗每次指针交互（bringToFront）会递增 z，
         // 挂载时算一次会过期，导致弹层被宿主盖住、选项看不见
-        if (o) setPopZ(nextZIndex())
+        if (o) {
+          setPopZ(nextZIndex())
+          // 主选择弹层与 +N 浮层互斥，避免两层浮层叠在一起
+          closeTagPopover()
+        }
         setOpen(o)
         // 通知宿主：点开时可拉取最新选项（分支/commit 列表）
         onOpenChange?.(o)
@@ -253,6 +312,10 @@ export function SearchableSelect({
         <button
           type="button"
           data-slot="searchable-select-trigger"
+          // 折叠出 +N 时整条 trigger 都是热区：hover 任意位置（chips / 空白 / +N）都展开全部已选，
+          // 不必精准瞄准 +N 那一小块。
+          onPointerEnter={hasTagOverflow ? openTagPopover : undefined}
+          onPointerLeave={hasTagOverflow ? scheduleTagClose : undefined}
           className={cn(
             'flex min-h-9 w-full items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
             // align 决定文本对齐：默认左对齐；center 供分段控件（TabEdit 项目/分支/commit）
@@ -293,28 +356,70 @@ export function SearchableSelect({
                     </button>
                   </span>
                 ))}
-                {selectedValues.length > tagLimit && (
-                  <TooltipProvider>
-                    <Tooltip delayDuration={0}>
-                      <TooltipTrigger asChild>
-                        <span className="cursor-help rounded-md bg-secondary px-1.5 py-0.5 text-[12px] text-secondary-foreground">
-                          +{selectedValues.length - tagLimit}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" align="start" className="max-w-[18rem] p-2">
-                        <div className="flex flex-wrap gap-1">
-                          {selectedValues.slice(tagLimit).map((v) => (
-                            <span
-                              key={v}
-                              className="max-w-full truncate rounded bg-background/15 px-1.5 py-0.5 text-[12px] text-background"
-                            >
+                {hasTagOverflow && (
+                  <Popover
+                    open={tagPopoverOpen}
+                    onOpenChange={(next) => {
+                      if (next) {
+                        openTagPopover()
+                        return
+                      }
+                      closeTagPopover()
+                    }}
+                  >
+                    {/* +N 仅作浮层定位锚点：hover 热区挂在外层 trigger 上（进入整条触发器即展开）。 */}
+                    <PopoverTrigger asChild>
+                      <span
+                        // 在 +N 上按/点不要穿透到外层选择弹层
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
+                        className="cursor-default rounded-md bg-secondary px-1.5 py-0.5 text-[12px] text-secondary-foreground"
+                      >
+                        +{selectedValues.length - tagLimit}
+                      </span>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      // key 随 z 变化：Radix Popper 只在内容挂载时把 computed z 拷到浮层 wrapper，
+                      // 内容未卸载时要重新挂载才会采用新的 z（宿主置顶后重开场景）。
+                      key={tagPopZ}
+                      side="bottom"
+                      align="start"
+                      sideOffset={6}
+                      style={{ zIndex: tagPopZ }}
+                      // hover 展开的浮层不抢焦点，避免打断用户正在操作的输入框
+                      onOpenAutoFocus={(e) => e.preventDefault()}
+                      onCloseAutoFocus={(e) => e.preventDefault()}
+                      // 进入内容只取消关闭：不能再抬 z（会改 key 触发重挂载，使已取得的按钮节点脱离 DOM）
+                      onPointerEnter={cancelTagClose}
+                      onPointerLeave={scheduleTagClose}
+                      // 浮层 portal 到 body，但 React 合成事件仍沿组件树冒泡到外层 trigger 按钮，
+                      // 不拦住的话点行内 X 会顺带打开外层选择弹层
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-[18rem] max-w-[calc(100vw-2rem)] p-1"
+                    >
+                      {/* 每行一个名称 + 删除按钮；清单含上方已露出的 chip，便于统一管理 */}
+                      <ul className="max-h-60 overflow-y-auto">
+                        {selectedValues.map((v) => (
+                          <li
+                            key={v}
+                            className="flex items-center gap-2 rounded px-1.5 py-1 text-[12px] text-foreground hover:bg-accent"
+                          >
+                            <span className="min-w-0 flex-1 truncate" title={labelOf(v)}>
                               {labelOf(v)}
                             </span>
-                          ))}
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                            <button
+                              type="button"
+                              aria-label={t('common.removeTag')}
+                              onClick={() => removeValue(v)}
+                              className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              <Icon name="close" className="size-3" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </PopoverContent>
+                  </Popover>
                 )}
               </span>
               <Icon name="chevron-down" className="size-4 shrink-0 opacity-50" />

@@ -40,6 +40,7 @@ function sameSelection(a: string[], b: string[]): boolean {
  * 提交时机：弹层打开期间只改草稿（勾选多个项目不会每点一次就触发一次对话状态变更），
  * 关闭弹层时一次性提交；关闭态直接点 chip 上的 X 则立即提交。
  * 换绑会重置对话，因此生成中/等待确认时整条置灰禁用（disabled），避免打断进行中的轮次。
+ * 绑定项超过 chip 上限时折叠为 +N，hover 可查看全部绑定；关闭态提供「清除绑定」一键清空。
  */
 export function AIBindingBar({
   bindings,
@@ -174,6 +175,17 @@ export function AIBindingBar({
         // 弹层给独立宽度，保证选项与搜索框可读。
         contentClassName="w-[22rem] max-w-[calc(100vw-2rem)]"
       />
+      {/* 一键清除全部绑定；弹层打开期间隐藏，避免与「关闭弹层提交草稿」两条提交路径交叉。 */}
+      {bindings.length > 0 && draft === null && (
+        <button
+          type="button"
+          onClick={() => commit([])}
+          disabled={disabled}
+          className="shrink-0 rounded px-1 py-0.5 text-[11px] text-faint transition-colors hover:bg-destructive/10 hover:text-destructive disabled:cursor-not-allowed"
+        >
+          {t('ai.bindingClear')}
+        </button>
+      )}
       <span className="text-faint">{t('ai.bindingHint')}</span>
     </div>
   )

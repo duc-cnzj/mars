@@ -816,9 +816,14 @@ export default {
       emptyTitle: 'How can I help?',
       emptyHint:
         'Ask AI to investigate containers, read logs, or deploy. Write actions always ask for your approval first.',
-      placeholder: 'Describe your question. Enter to send, Shift+Enter for a new line',
+      placeholder:
+        'Describe your question. Enter to send, Shift+Enter for a new line, ↑/↓ for history',
       confirmPlaceholder: 'Confirm the write action above first',
-      inputHint: 'History is stored in this browser. Verify AI conclusions against reality.',
+      inputHint:
+        'History is stored in this browser. Verify AI conclusions against reality. Commands: /new for a new chat, /clear to clear the current one.',
+      commandHintLabel: 'Available commands',
+      commandNewHint: 'Start a new conversation; the current one stays in history',
+      commandClearHint: 'Delete the current conversation immediately (no confirmation)',
       bindingSwitched:
         'Binding scope changed. A new conversation was started; the previous one stays in history.',
       send: 'Send',
@@ -847,6 +852,7 @@ export default {
     bindingAllProjects: 'All projects',
     bindingHint:
       'AI answers about the selected namespaces/projects unless your question names another; switching the binding starts a new conversation',
+    bindingClear: 'Clear',
     bindingLoadFailed: 'Failed to load namespaces/projects. Please try again.',
     quickPromptsLabel: 'Common questions',
     quickPromptDeploy: 'Deploy the latest code for me',

@@ -43,10 +43,34 @@ import { aiBindingKey, type AIBinding } from './AIContext'
 const EMPTY_MESSAGES: ChatMessageModel[] = []
 const EMPTY_BINDINGS: AIBinding[] = []
 
+/** 输入框内置命令（整条消息恰好等于 `/命令` 才触发）。 */
+const SLASH_COMMANDS = ['new', 'clear'] as const
+type SlashCommand = (typeof SLASH_COMMANDS)[number]
+
+/** 命令说明文案的 i18n key（输入 `/` 时的提示行使用）。 */
+const SLASH_COMMAND_HINT_KEYS = {
+  new: 'ai.chat.commandNewHint',
+  clear: 'ai.chat.commandClearHint',
+} as const satisfies Record<SlashCommand, string>
+
+/** 识别内置命令；只认整条消息精确命中，`/api 路径` 这类正常提问照旧发给模型。 */
+function parseSlashCommand(text: string): SlashCommand | null {
+  const match = text.trim().match(/^\/([a-z]+)$/i)
+  if (!match) return null
+  const name = match[1].toLowerCase()
+  return (SLASH_COMMANDS as readonly string[]).includes(name) ? (name as SlashCommand) : null
+}
+
 /** 入口问题的归一化：空白折叠成单行，空串按「无问题」处理。 */
 function normalizePrompt(prompt?: string): string | undefined {
   const value = prompt?.replace(/\s+/g, ' ').trim()
   return value ? value : undefined
+}
+
+/** 光标是否停在首行且无选区：此时 ↑ 才回溯历史，其余情况交给默认的光标移动。 */
+function isCaretOnFirstLine(el: HTMLTextAreaElement): boolean {
+  if (el.selectionStart !== el.selectionEnd) return false
+  return !el.value.slice(0, el.selectionStart).includes('\n')
 }
 
 /** 两组绑定是否等价（`空间/项目` 集合比较，顺序无关）。 */
@@ -75,6 +99,8 @@ function getActive(store: ChatStore): ChatSession | null {
  * - 空白对话展示常见问题，点击即发送；
  * - 只读工具自动执行，写工具暂停并展示确认条（批准/拒绝后继续同一轮对话）；
  * - 生成中可「停止」中断 SSE，已生成的内容保留；
+ * - 输入框 ↑/↓ 像命令行一样回溯当前会话已发送的问题（未发送的草稿会暂存并恢复）；
+ * - 输入框支持内置命令（整条消息精确命中才触发）：`/new` 新建对话、`/clear` 清除当前对话；
  * - 场景入口（项目诊断/日志分析）带来的问题在打开时自动发送；
  * - 「历史对话」可切换此前的会话，每段会话恢复当时的绑定范围；
  * - 换绑不会污染旧会话：已有内容时另开一段新会话，旧会话保留在历史里。
@@ -151,6 +177,31 @@ export function AIChatLauncher({
   const decideRef = useRef<(approved: boolean) => void>(() => {})
   const [model, setModel] = useState('')
   const [draft, setDraft] = useState('')
+  /** 输入区 DOM：↑/↓ 回溯历史时读取光标位置，回填后复位光标。 */
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  /** 历史回溯游标：-1 表示未在浏览历史，否则指向 inputHistory 的下标。 */
+  const historyCursorRef = useRef(-1)
+  /** 进入历史浏览前暂存的草稿，↓ 越过最新一条时恢复。 */
+  const stashedDraftRef = useRef('')
+  /** 本次 draft 更新来自历史回填：提交后把光标移到末尾。 */
+  const caretToEndRef = useRef(false)
+  /** 命令提示里当前高亮的下标（↑/↓ 在提示项间移动，不复用历史回溯游标）。 */
+  const [commandIndex, setCommandIndex] = useState(0)
+
+  // 回填历史后把光标移到末尾：等本次提交写入 DOM 值后再设置选区。
+  useEffect(() => {
+    if (!caretToEndRef.current) return
+    caretToEndRef.current = false
+    const el = textareaRef.current
+    if (el) el.setSelectionRange(el.value.length, el.value.length)
+  }, [draft])
+
+  /** 退出历史浏览，回到「输入的是草稿」的正常编辑态。 */
+  const resetHistoryNav = useCallback(() => {
+    historyCursorRef.current = -1
+    stashedDraftRef.current = ''
+  }, [])
+
   /** 本轮对话是否已上报首 token 事件（每轮只上报一次）。 */
   const firstTokenRef = useRef(false)
   /** tool_call_id → 运行时结果标志（tool 消息只带内容，ok 由事件补充）。 */
@@ -160,6 +211,42 @@ export function AIChatLauncher({
   const activeSession = getActive(store)
   const messages = activeSession?.messages ?? EMPTY_MESSAGES
   const bindings = activeSession?.bindings ?? EMPTY_BINDINGS
+
+  /** 当前会话已发送的用户消息（旧 → 新），↑/↓ 在这份列表上回溯。 */
+  const inputHistory = useMemo(
+    () =>
+      messages
+        .filter((message) => message.role === 'user')
+        .map((message) => message.content ?? '')
+        .filter((content) => content.trim() !== ''),
+    [messages],
+  )
+  const inputHistoryRef = useRef(inputHistory)
+  inputHistoryRef.current = inputHistory
+
+  /**
+   * 输入 `/` 时的命令提示：仅在「整条输入是一个命令前缀」时出现（`/`、`/cl`），
+   * 输入已完成某条命令（`/clear`）或包含空格/路径（`/api/health`）时自动收起。
+   */
+  const commandMatches = useMemo(() => {
+    const match = draft.trim().match(/^\/([a-z]*)$/i)
+    if (!match) return []
+    const prefix = match[1].toLowerCase()
+    return SLASH_COMMANDS.filter((name) => name.startsWith(prefix) && name !== prefix)
+  }, [draft])
+  /** 高亮项：输入收窄后索引可能越界，读取时按当前候选数收敛，避免取到 undefined。 */
+  const activeCommandIndex =
+    commandMatches.length === 0 ? 0 : Math.min(commandIndex, commandMatches.length - 1)
+
+  // 输入变化后高亮回到第一条，避免沿用上一次的索引落到别的命令上。
+  useEffect(() => {
+    setCommandIndex(0)
+  }, [draft])
+
+  // 切换会话后只回溯新会话的历史：游标与暂存草稿一并清空。
+  useEffect(() => {
+    resetHistoryNav()
+  }, [activeSession?.id, resetHistoryNav])
 
   /** 写入会话列表：同步 ref 再更新 state，保证后续同步回调读到最新值。 */
   const applyStore = useCallback((next: ChatStore) => {
@@ -324,12 +411,22 @@ export function AIChatLauncher({
       if (!active) return
       const next = [...active.messages, { role: 'user', content } as ChatMessageModel]
       setMessages(next)
+      resetHistoryNav()
       setDraft('')
       void run((signal) =>
         streamChat(next, active.bindings, localeRef.current, signal, handleEvent),
       )
     },
-    [handleEvent, run, setMessages],
+    [handleEvent, resetHistoryNav, run, setMessages],
+  )
+
+  /** 常见问题填充属于新输入而非历史回溯：先退出浏览态，避免 ↑ 拿到错位的游标。 */
+  const fillDraft = useCallback(
+    (value: string) => {
+      resetHistoryNav()
+      setDraft(value)
+    },
+    [resetHistoryNav],
   )
 
   /** 提交写工具确认结果；消息数组原样回传 need_confirm 帧里的状态。 */
@@ -418,6 +515,57 @@ export function AIChatLauncher({
     if (!active || active.messages.length === 0) return
     setDeleteTarget(active.id)
   }, [])
+
+  /** 命令用的一键清除：输入 `/clear` 已是明确意图，直接删除当前会话，不再弹确认框。 */
+  const clearChatNow = useCallback(() => {
+    if (streamingRef.current || pendingRef.current) return
+    const active = getActive(storeRef.current)
+    if (!active || active.messages.length === 0) return
+    deleteSession(active.id)
+  }, [deleteSession])
+
+  /** 执行内置命令：/new 新建对话；/clear 直接清除当前会话（无二次确认）。 */
+  const runSlashCommand = useCallback(
+    (command: SlashCommand) => {
+      if (command === 'new') {
+        newChat()
+        return
+      }
+      clearChatNow()
+    },
+    [newChat, clearChatNow],
+  )
+
+  /** 执行命令：清空草稿并交给与按钮一致的处理；生成中/等待确认时保留草稿不执行。 */
+  const executeCommand = useCallback(
+    (command: SlashCommand) => {
+      if (streamingRef.current || pendingRef.current) return
+      resetHistoryNav()
+      setDraft('')
+      runSlashCommand(command)
+    },
+    [resetHistoryNav, runSlashCommand],
+  )
+
+  /** 提交输入框：命中内置命令就在本地执行（不发给模型），否则按普通问题发送。 */
+  const submitDraft = useCallback(() => {
+    const command = parseSlashCommand(draft)
+    if (!command) {
+      send(draft)
+      return
+    }
+    executeCommand(command)
+  }, [draft, executeCommand, send])
+
+  /** Enter 与「发送」按钮共用：命令提示展开时执行高亮项，避免把半截 `/` 当消息发给模型。 */
+  const submitInput = useCallback(() => {
+    const picked = commandMatches[activeCommandIndex]
+    if (picked) {
+      executeCommand(picked)
+      return
+    }
+    submitDraft()
+  }, [activeCommandIndex, commandMatches, executeCommand, submitDraft])
 
   /** 切换历史会话：恢复该会话的消息与绑定（生成中/等待确认时禁止切换）。 */
   const switchSession = useCallback(
@@ -544,6 +692,12 @@ export function AIChatLauncher({
       <DialogContent
         {...dnd.contentProps}
         showOverlay={false}
+        // 打开面板即聚焦输入框（压住 Radix 默认聚焦内容容器/关闭按钮的行为）。
+        // 拖动、滚轮等非输入交互不受影响；等待写工具确认时 textarea 已 disabled，焦点自然落空。
+        onOpenAutoFocus={(e) => {
+          e.preventDefault()
+          textareaRef.current?.focus()
+        }}
         onPointerDownOutside={(e) => e.preventDefault()}
         onFocusOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
@@ -695,7 +849,7 @@ export function AIChatLauncher({
                 <p className="text-[15px] font-medium text-ink">{t('ai.chat.emptyTitle')}</p>
                 <p className="text-[12px] text-mute">{t('ai.chat.emptyHint')}</p>
               </div>
-              <AIQuickPrompts onFill={setDraft} />
+              <AIQuickPrompts onFill={fillDraft} />
             </div>
           ) : (
             <div className="flex flex-col gap-3">
@@ -748,13 +902,89 @@ export function AIChatLauncher({
         <div className="border-t border-line px-4 py-3">
           {/* 一体化输入壳：textarea 无边框，聚焦态由外层 ring 表达；工具条常驻在输入区底部。 */}
           <div className="rounded-xl border border-line bg-surface shadow-sm transition-[border-color,box-shadow] focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/15">
+            {/* 输入 `/` 时的命令提示：↑/↓ 选择、Enter 执行、点击等同选中执行。 */}
+            {commandMatches.length > 0 && (
+              <ul aria-label={t('ai.chat.commandHintLabel')} className="border-b border-line p-1">
+                {commandMatches.map((name, index) => (
+                  <li key={name}>
+                    <button
+                      type="button"
+                      // 高亮项用 aria-current 标注；用原生 button 语义，读屏可直接激活
+                      aria-current={index === activeCommandIndex ? 'true' : undefined}
+                      // 阻止默认 focus 转移，执行后输入框仍保持焦点
+                      onMouseDown={(e) => e.preventDefault()}
+                      onMouseEnter={() => setCommandIndex(index)}
+                      onClick={() => executeCommand(name)}
+                      className={`flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[12px] transition-colors ${
+                        index === activeCommandIndex
+                          ? 'bg-accent text-ink'
+                          : 'text-mute hover:bg-accent hover:text-ink'
+                      }`}
+                    >
+                      <span className="font-mono text-ink">{`/${name}`}</span>
+                      <span className="min-w-0 truncate">{t(SLASH_COMMAND_HINT_KEYS[name])}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
             <textarea
+              ref={textareaRef}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault()
-                  send(draft)
+                  submitInput()
+                  return
+                }
+                // 输入法组合态下方向键用于选词，不接管提示导航与历史回溯。
+                if (e.nativeEvent.isComposing) return
+                // 命令提示展开时 ↑/↓ 移动高亮，优先于历史回溯。
+                if (commandMatches.length > 0 && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+                  e.preventDefault()
+                  const delta = e.key === 'ArrowDown' ? 1 : -1
+                  setCommandIndex((index) =>
+                    Math.min(Math.max(index + delta, 0), commandMatches.length - 1),
+                  )
+                  return
+                }
+                if (e.key === 'ArrowUp') {
+                  const history = inputHistoryRef.current
+                  if (history.length === 0) return
+                  const cursor = historyCursorRef.current
+                  if (cursor < 0) {
+                    // 未在浏览历史时，仅当光标停在首行才接管 ↑，多行编辑仍可正常移动光标。
+                    const el = textareaRef.current
+                    if (el && !isCaretOnFirstLine(el)) return
+                    stashedDraftRef.current = draft
+                    historyCursorRef.current = history.length - 1
+                    e.preventDefault()
+                    caretToEndRef.current = true
+                    setDraft(history[history.length - 1])
+                    return
+                  }
+                  if (cursor === 0) return
+                  historyCursorRef.current = cursor - 1
+                  e.preventDefault()
+                  caretToEndRef.current = true
+                  setDraft(history[cursor - 1])
+                  return
+                }
+                if (e.key === 'ArrowDown' && historyCursorRef.current >= 0) {
+                  const history = inputHistoryRef.current
+                  const cursor = historyCursorRef.current
+                  e.preventDefault()
+                  if (cursor < history.length - 1) {
+                    historyCursorRef.current = cursor + 1
+                    caretToEndRef.current = true
+                    setDraft(history[cursor + 1])
+                    return
+                  }
+                  // 越过最新一条：恢复浏览前暂存的草稿，回到正常编辑态。
+                  historyCursorRef.current = -1
+                  caretToEndRef.current = true
+                  setDraft(stashedDraftRef.current)
                 }
               }}
               disabled={pending !== null}
@@ -790,7 +1020,7 @@ export function AIChatLauncher({
                 <Button
                   size="sm"
                   className="h-7 px-3 text-[12px]"
-                  onClick={() => send(draft)}
+                  onClick={submitInput}
                   disabled={!draft.trim() || pending !== null}
                 >
                   {t('ai.chat.send')}
