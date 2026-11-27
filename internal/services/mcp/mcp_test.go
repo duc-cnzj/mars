@@ -500,6 +500,20 @@ func TestServer_InitializeAndListTools(t *testing.T) {
 		assert.NotEqual(t, true, ann["readOnlyHint"],
 			"%s 是写工具，readOnlyHint 不得为 true，否则客户端不会弹确认", name)
 	}
+
+	// 写工具的入参 schema 必须真实暴露分区配置字段：JSON 标签或 reflector 一旦写错，
+	// 模型按 schema 传参会被静默忽略，只有锁定 properties 才能提前发现。
+	schema, _ := byName["update_repo_custom_fields"]["inputSchema"].(map[string]any)
+	props, _ := schema["properties"].(map[string]any)
+	for _, key := range []string{"repo_id", "upsert_elements", "remove_paths", "upsert_group_settings", "remove_group_names"} {
+		assert.Contains(t, props, key, "update_repo_custom_fields 入参必须暴露 %s", key)
+	}
+	groupItems, _ := props["upsert_group_settings"].(map[string]any)["items"].(map[string]any)
+	groupProps, _ := groupItems["properties"].(map[string]any)
+	for _, key := range []string{"name", "order", "collapsed"} {
+		assert.Contains(t, groupProps, key, "分区条目必须暴露 %s", key)
+	}
+	assert.Equal(t, []any{"name"}, groupItems["required"])
 }
 
 // TestServer_PaginationSchemaFlattened 锁定分页公共片段（paginationIn）的 schema 形状。

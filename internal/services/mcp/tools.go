@@ -392,12 +392,14 @@ func registerAdminTools(srv *sdk.Server, ts *toolset) {
 
 	sdk.AddTool(srv, &sdk.Tool{
 		Name: "update_repo_custom_fields",
-		Description: "[仅管理员][写操作] 增量新增/整条覆盖/删除仓库级自定义字段（repo.mars_config.elements）。" +
-			"入参：repo_id 必填；upsert_elements 按 path 新增或整条替换（同一次调用内 path 不得重复）；remove_paths 删除已存在字段（路径不存在报错，不静默跳过）。" +
-			"两者至少提供一个，且同一 path 不能同时出现在 upsert 与 remove 中。" +
+		Description: "[仅管理员][写操作] 增量新增/整条覆盖/删除仓库级自定义字段（repo.mars_config.elements），并可维护分区展示配置（repo.mars_config.group_settings：分区排序 order 与默认折叠 collapsed）。" +
+			"入参：repo_id 必填；upsert_elements 按 path 新增或整条替换（同一次调用内 path 不得重复）；remove_paths 删除已存在字段（路径不存在报错，不静默跳过）；upsert_group_settings 按 name 新增或更新分区（name 1~64 字节，order/collapsed 不传时更新保留原值、新增 order 追加末尾且 collapsed=false）；remove_group_names 删除分区（分区不存在报错）。" +
+			"四类入参至少提供一个，且同一 path / 分区名不能同时出现在 upsert 与 remove 中。" +
+			"字段与分区的关系：字段通过 group 字段归属分区，**元素是整条替换**——更新已有字段时未传 group/select_values/textarea_language 等字段会被清空为默认值，改前先把 get_repo_custom_fields 的现值抄全。" +
+			"分区由字段派生：**新增分区必须已被至少一个字段引用**（本次 upsert 的字段或存量字段），否则会被拒绝；**删除仍被字段引用的分区会报错**，需先把这些字段的 group 改到其他分区再删。分区改名 = 用新名新增 + 把字段 group 改成新名 + 删除旧名。" +
 			"type 接受短名（InputNumber）或枚举全名（ElementTypeInputNumber）；description 必填；默认值按元素类型强校验（Switch 必须是 bool、InputNumber/Number* 必须是整数、Select/Radio/Number* 必须落在 select_values 内），且 InputNumber/Switch/Select/Radio/Number* 的默认值不能为空（Input/TextArea 可空，与后台仓库表单口径一致）；非法即整次调用失败、仓库配置不变。" +
-			"order 是可选：更新已有字段不传则保留原顺序，新增字段不传则追加到末尾；显式传值以入参为准。" +
-			"**只改 elements，其余仓库配置（values.yaml、branches、配置片段、分区、休眠窗配置）原样保留**；本工具也不改仓库名、Git 绑定与描述。" +
+			"order 是可选：更新已有字段/分区不传则保留原顺序，新增不传则追加到末尾；显式传值以入参为准。" +
+			"**只改 elements 与 group_settings，其余仓库配置（values.yaml、branches、配置片段、休眠窗配置）原样保留**；本工具也不改仓库名、Git 绑定与描述。" +
 			"返回更新后的仓库配置（形状同 get_repo_custom_fields：repo_id、repo_name、values_yaml、branches、group_settings、hibernate、elements）。" +
 			"风险：**删除或改坏被休眠配置 replica_paths 引用的字段会直接报错**（事务不落库）；改了默认值只影响之后的新部署，不会重部署存量项目。" +
 			"**对存量项目的影响**：本工具只改仓库模板、不会自动重部署，但之后任何重部署或定时唤醒都会用项目已存的自定义值按**新定义**重新校验——改 type 或收窄 select_values 会让不兼容的项目部署失败（表现为 InvalidArgument，需改回定义或调整项目值）；删除字段会让该项目值在下次部署时被静默丢弃，并从项目记录中移除。改前务必确认影响面。" +

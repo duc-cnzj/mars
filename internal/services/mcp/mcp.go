@@ -177,8 +177,9 @@ const adminToolInstructions = `
 - get_repo_custom_fields（只读）：读取仓库配置——自定义字段定义 repo.mars_config.elements（项目「自定义参数」的
   唯一权威清单，path 即 apply_project 的 extra_values 键，type 决定取值约束），以及 values.yaml 模板、分支白名单、
   分区配置、定时休眠；repo_id 从 list_repos 取。改字段前先读它。
-- update_repo_custom_fields（写，客户端弹确认）：增量新增/整条覆盖/删除仓库级自定义字段；只改 elements，
-  values.yaml/branches/配置片段/分区/休眠配置原样保留。合法性与失败语义见工具 description。
+- update_repo_custom_fields（写，客户端弹确认）：增量新增/整条覆盖/删除仓库级自定义字段（elements），
+  并可维护分区展示配置（group_settings：order 排序、collapsed 默认折叠）；values.yaml/branches/
+  配置片段/休眠配置原样保留。合法性与失败语义见工具 description。
 - 这三个工具作用于仓库级配置，与项目权限边界无关，入口即过 RequireAdmin；普通用户需要新增字段时
   应引导其联系仓库管理员，需用管理员本人 token 直连 /mcp。`
 

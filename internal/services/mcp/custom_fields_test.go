@@ -40,6 +40,18 @@ func customFieldRepo() *apitypes.RepoModel {
 	}
 }
 
+// assertGroupSettings 逐条比较分区配置的语义值：proto 消息带运行期状态字段，
+// 直接用 assert.Equal 比较会受反射缓存影响（-race 下尤其明显）而误判。
+func assertGroupSettings(t *testing.T, want []*mars.GroupSetting, got []*mars.GroupSetting, msgAndArgs ...any) {
+	t.Helper()
+	require.Len(t, got, len(want), msgAndArgs...)
+	for i := range want {
+		assert.Equal(t, want[i].GetName(), got[i].GetName(), "第 %d 个分区 name", i)
+		assert.Equal(t, want[i].GetOrder(), got[i].GetOrder(), "第 %d 个分区 order", i)
+		assert.Equal(t, want[i].GetCollapsed(), got[i].GetCollapsed(), "第 %d 个分区 collapsed", i)
+	}
+}
+
 // TestToolset_GetRepoCustomFields 覆盖管理员读工具的门禁、寻址、投影与错误透传。
 func TestToolset_GetRepoCustomFields(t *testing.T) {
 	t.Run("管理员读取成功并投影为类型名", func(t *testing.T) {
@@ -193,6 +205,74 @@ func TestServer_CallTool_GetRepoCustomFieldsReturnsConfig(t *testing.T) {
 	assert.Contains(t, content, `"path":"app-\u003ereplicas"`)
 }
 
+// TestServer_CallTool_UpdateRepoCustomFieldsGroupSettings 端到端锁定分区配置的入参
+// 字段名（upsert_group_settings / name / collapsed）与落库结果：JSON 标签一旦写错，
+// 模型按 schema 传参会被静默忽略，只有走真实 tools/call 链路才能发现。
+func TestServer_CallTool_UpdateRepoCustomFieldsGroupSettings(t *testing.T) {
+	e := newTestEnv(t)
+	e.expectAuth(adminUser())
+	var captured *repopb.UpdateRequest
+	e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+		return &repopb.ShowResponse{Item: customFieldRepo()}, nil
+	}
+	e.repoSvc.updateFn = func(_ context.Context, req *repopb.UpdateRequest) (*repopb.UpdateResponse, error) {
+		captured = req
+		return &repopb.UpdateResponse{Item: &apitypes.RepoModel{
+			Id: req.GetId(), Name: req.GetName(), MarsConfig: req.GetMarsConfig(),
+		}}, nil
+	}
+
+	sessionID := e.initSession(t, testToken)
+	code, _, body := e.post(t, sessionID, testToken,
+		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"update_repo_custom_fields","arguments":{`+
+			`"repo_id":5,`+
+			`"upsert_elements":[{"path":"app->log_level","type":"Select","default":"info","description":"日志级别","select_values":["info","debug"],"group":"日志配置"}],`+
+			`"upsert_group_settings":[{"name":"日志配置","collapsed":true}]}}}`)
+	require.Equal(t, http.StatusOK, code, body)
+	res := sseJSON(t, body)["result"].(map[string]any)
+	require.NotEqual(t, true, res["isError"], "update_repo_custom_fields 不应报错: %v", body)
+
+	require.NotNil(t, captured, "必须调用 RepoSvc.Update")
+	cfg := captured.GetMarsConfig()
+	require.Len(t, cfg.GetElements(), 3)
+	assert.Equal(t, "日志配置", cfg.GetElements()[2].GetGroup())
+	require.Len(t, cfg.GetGroupSettings(), 2)
+	assertGroupSettings(t, []*mars.GroupSetting{{Name: "日志配置", Order: 2, Collapsed: true}}, cfg.GetGroupSettings()[1:])
+}
+
+// TestServer_CallTool_UpdateRepoCustomFieldsExplicitZero 锁定分区配置指针入参的零值语义
+// 穿透 MCP 传输层：`collapsed: false` / `order: 0` 与「未传」在 Go 里零值相同，若解码
+// 层不能区分（或 omitempty 误生效），管理员就无法把折叠态改回 false、把分区排到最前。
+// 用「原值 order=1、collapsed=true」做底，显式传 0/false 必须覆盖成功才有区分度。
+func TestServer_CallTool_UpdateRepoCustomFieldsExplicitZero(t *testing.T) {
+	e := newTestEnv(t)
+	e.expectAuth(adminUser())
+	var captured *repopb.UpdateRequest
+	e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+		return &repopb.ShowResponse{Item: customFieldRepo()}, nil
+	}
+	e.repoSvc.updateFn = func(_ context.Context, req *repopb.UpdateRequest) (*repopb.UpdateResponse, error) {
+		captured = req
+		return &repopb.UpdateResponse{Item: &apitypes.RepoModel{
+			Id: req.GetId(), Name: req.GetName(), MarsConfig: req.GetMarsConfig(),
+		}}, nil
+	}
+
+	sessionID := e.initSession(t, testToken)
+	code, _, body := e.post(t, sessionID, testToken,
+		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"update_repo_custom_fields","arguments":{`+
+			`"repo_id":5,"upsert_group_settings":[{"name":"基础配置","order":0,"collapsed":false}]}}}`)
+	require.Equal(t, http.StatusOK, code, body)
+	res := sseJSON(t, body)["result"].(map[string]any)
+	require.NotEqual(t, true, res["isError"], "显式零值不应报错: %v", body)
+
+	require.NotNil(t, captured, "必须调用 RepoSvc.Update")
+	gs := captured.GetMarsConfig().GetGroupSettings()
+	require.Len(t, gs, 1)
+	assert.Equal(t, uint32(0), gs[0].GetOrder(), "显式 order=0 必须覆盖原值 1")
+	assert.False(t, gs[0].GetCollapsed(), "显式 collapsed=false 必须覆盖原值 true")
+}
+
 // TestToolset_UpdateRepoCustomFields 覆盖写工具的增量语义：整条替换、末尾追加、
 // 删除，以及「只改 elements、其余配置原样回填」这条整段替换链路的关键约束。
 func TestToolset_UpdateRepoCustomFields(t *testing.T) {
@@ -242,7 +322,7 @@ func TestToolset_UpdateRepoCustomFields(t *testing.T) {
 		// 除 elements 外的仓库配置必须原样保留。
 		assert.Equal(t, "image:\n  tag: v1", cfg.GetValuesYaml())
 		assert.Equal(t, []string{"main", "release"}, cfg.GetBranches())
-		assert.Equal(t, []*mars.GroupSetting{{Name: "基础配置", Order: 1, Collapsed: true}}, cfg.GetGroupSettings())
+		assertGroupSettings(t, []*mars.GroupSetting{{Name: "基础配置", Order: 1, Collapsed: true}}, cfg.GetGroupSettings())
 		require.NotNil(t, cfg.GetHibernate())
 		assert.True(t, cfg.GetHibernate().GetEnabled())
 		assert.Equal(t, []string{"app->replicas"}, cfg.GetHibernate().GetReplicaPaths())
@@ -342,7 +422,7 @@ func TestToolset_UpdateRepoCustomFields(t *testing.T) {
 	t.Run("group 恰好 64 字节可写入", func(t *testing.T) {
 		e := newTestEnv(t)
 		captured := captureUpdate(t, e, customFieldRepo())
-		group := strings.Repeat("a", maxElementGroupBytes)
+		group := strings.Repeat("a", maxGroupNameBytes)
 
 		_, _, err := e.toolset().updateRepoCustomFields(ctxWithUser(adminUser()), nil, updateRepoCustomFieldsIn{
 			RepoID: 5,
@@ -355,19 +435,200 @@ func TestToolset_UpdateRepoCustomFields(t *testing.T) {
 		assert.Equal(t, group, els[2].GetGroup(), "边界值必须原样保留，不能被截断")
 	})
 
-	t.Run("path 前后空格被裁剪后写入", func(t *testing.T) {
+	t.Run("新增字段与分区配置同时写入", func(t *testing.T) {
+		e := newTestEnv(t)
+		captured := captureUpdate(t, e, customFieldRepo())
+		collapsed := true
+
+		_, out, err := e.toolset().updateRepoCustomFields(ctxWithUser(adminUser()), nil, updateRepoCustomFieldsIn{
+			RepoID: 5,
+			Upsert: []repoElementIn{{
+				Path: "app->log_level", Type: "Select", Default: "info", Description: "日志级别",
+				SelectValues: []string{"info", "debug"}, Group: "日志配置",
+			}},
+			UpsertGroups: []repoGroupSettingIn{{Name: "日志配置", Collapsed: &collapsed}},
+		})
+		require.NoError(t, err)
+
+		cfg := captured().GetMarsConfig()
+		els := cfg.GetElements()
+		require.Len(t, els, 3)
+		assert.Equal(t, "日志配置", els[2].GetGroup())
+		assertGroupSettings(t, []*mars.GroupSetting{
+			{Name: "基础配置", Order: 1, Collapsed: true},
+			{Name: "日志配置", Order: 2, Collapsed: true}, // 新增分区未传 order 时追加到当前最大值 1 + 1
+		}, cfg.GetGroupSettings())
+
+		got := out.(repoCustomFieldsOut)
+		assert.Equal(t, []repoGroupSetting{
+			{Name: "基础配置", Order: 1, Collapsed: true},
+			{Name: "日志配置", Order: 2, Collapsed: true},
+		}, got.GroupSettings, "出参必须回吐更新后的分区配置")
+	})
+
+	t.Run("更新已有分区保留未传字段并规范化名称", func(t *testing.T) {
+		e := newTestEnv(t)
+		captured := captureUpdate(t, e, customFieldRepo())
+		order := uint32(5)
+
+		_, _, err := e.toolset().updateRepoCustomFields(ctxWithUser(adminUser()), nil, updateRepoCustomFieldsIn{
+			RepoID:       5,
+			UpsertGroups: []repoGroupSettingIn{{Name: " 基础配置 ", Order: &order}},
+		})
+		require.NoError(t, err)
+
+		// 名称裁剪后落库，未传的 collapsed 保留原值 true
+		assertGroupSettings(t, []*mars.GroupSetting{{Name: "基础配置", Order: 5, Collapsed: true}},
+			captured().GetMarsConfig().GetGroupSettings())
+	})
+
+	t.Run("显式 collapsed=false 覆盖原值", func(t *testing.T) {
+		e := newTestEnv(t)
+		captured := captureUpdate(t, e, customFieldRepo())
+		collapsed := false
+
+		_, _, err := e.toolset().updateRepoCustomFields(ctxWithUser(adminUser()), nil, updateRepoCustomFieldsIn{
+			RepoID:       5,
+			UpsertGroups: []repoGroupSettingIn{{Name: "基础配置", Collapsed: &collapsed}},
+		})
+		require.NoError(t, err)
+
+		// 未传的 order 保留原值 1
+		assertGroupSettings(t, []*mars.GroupSetting{{Name: "基础配置", Order: 1, Collapsed: false}},
+			captured().GetMarsConfig().GetGroupSettings())
+	})
+
+	t.Run("新增分区显式 order 以入参为准", func(t *testing.T) {
+		e := newTestEnv(t)
+		captured := captureUpdate(t, e, customFieldRepo())
+		order := uint32(0)
+
+		_, _, err := e.toolset().updateRepoCustomFields(ctxWithUser(adminUser()), nil, updateRepoCustomFieldsIn{
+			RepoID:       5,
+			Upsert:       []repoElementIn{{Path: "app->a", Type: "Input", Description: "字段 A", Group: "日志配置"}},
+			UpsertGroups: []repoGroupSettingIn{{Name: "日志配置", Order: &order}},
+		})
+		require.NoError(t, err)
+
+		groups := captured().GetMarsConfig().GetGroupSettings()
+		require.Len(t, groups, 2)
+		assertGroupSettings(t, []*mars.GroupSetting{{Name: "日志配置", Order: 0}}, groups[1:])
+	})
+
+	t.Run("删除未被引用的存量分区", func(t *testing.T) {
 		e := newTestEnv(t)
 		captured := captureUpdate(t, e, customFieldRepo())
 
 		_, _, err := e.toolset().updateRepoCustomFields(ctxWithUser(adminUser()), nil, updateRepoCustomFieldsIn{
-			RepoID: 5,
-			Upsert: []repoElementIn{{Path: "  app->log_level  ", Type: "Input", Description: "日志级别"}},
+			RepoID: 5, RemoveGroupNames: []string{" 基础配置 "},
 		})
 		require.NoError(t, err)
 
-		els := captured().GetMarsConfig().GetElements()
-		require.Len(t, els, 3)
-		assert.Equal(t, "app->log_level", els[2].GetPath(), "落库 path 必须是裁剪后的形态")
+		assert.Empty(t, captured().GetMarsConfig().GetGroupSettings(), "分区配置应被删除，其余配置不受影响")
+		require.Len(t, captured().GetMarsConfig().GetElements(), 2)
+	})
+
+	t.Run("分区 order 达到上限时拒绝自动追加", func(t *testing.T) {
+		e := newTestEnv(t)
+		current := customFieldRepo()
+		current.MarsConfig.GroupSettings[0].Order = math.MaxUint32
+		e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+			return &repopb.ShowResponse{Item: current}, nil
+		}
+		e.repoSvc.updateFn = func(context.Context, *repopb.UpdateRequest) (*repopb.UpdateResponse, error) {
+			t.Fatal("order 溢出时必须拒绝，不得调用 Update")
+			return nil, nil
+		}
+
+		_, _, err := e.toolset().updateRepoCustomFields(ctxWithUser(adminUser()), nil, updateRepoCustomFieldsIn{
+			RepoID:       5,
+			Upsert:       []repoElementIn{{Path: "app->a", Type: "Input", Description: "字段 A", Group: "日志配置"}},
+			UpsertGroups: []repoGroupSettingIn{{Name: "日志配置"}},
+		})
+		require.Error(t, err)
+		assert.Equal(t, codes.InvalidArgument, status.Code(err))
+		assert.Contains(t, err.Error(), "order 已达上限")
+	})
+
+	t.Run("分区名恰好 64 字节可写入", func(t *testing.T) {
+		e := newTestEnv(t)
+		captured := captureUpdate(t, e, customFieldRepo())
+		name := strings.Repeat("a", maxGroupNameBytes)
+
+		_, _, err := e.toolset().updateRepoCustomFields(ctxWithUser(adminUser()), nil, updateRepoCustomFieldsIn{
+			RepoID:       5,
+			Upsert:       []repoElementIn{{Path: "app->a", Type: "Input", Description: "字段 A", Group: name}},
+			UpsertGroups: []repoGroupSettingIn{{Name: name}},
+		})
+		require.NoError(t, err)
+
+		assertGroupSettings(t, []*mars.GroupSetting{
+			{Name: "基础配置", Order: 1, Collapsed: true},
+			{Name: name, Order: 2},
+		}, captured().GetMarsConfig().GetGroupSettings())
+	})
+
+	t.Run("新增分区可被存量字段引用", func(t *testing.T) {
+		e := newTestEnv(t)
+		current := customFieldRepo()
+		current.MarsConfig.Elements[1].Group = "日志配置"
+		captured := captureUpdate(t, e, current)
+		collapsed := true
+
+		_, _, err := e.toolset().updateRepoCustomFields(ctxWithUser(adminUser()), nil, updateRepoCustomFieldsIn{
+			RepoID:       5,
+			UpsertGroups: []repoGroupSettingIn{{Name: "日志配置", Collapsed: &collapsed}},
+		})
+		require.NoError(t, err)
+
+		assertGroupSettings(t, []*mars.GroupSetting{
+			{Name: "基础配置", Order: 1, Collapsed: true},
+			{Name: "日志配置", Order: 2, Collapsed: true},
+		}, captured().GetMarsConfig().GetGroupSettings())
+		require.Len(t, captured().GetMarsConfig().GetElements(), 2, "元素未被触碰")
+	})
+
+	t.Run("分区改名：搬字段、建新分区、删旧分区一次完成", func(t *testing.T) {
+		e := newTestEnv(t)
+		current := customFieldRepo()
+		current.MarsConfig.Elements[0].Group = "旧分区"
+		current.MarsConfig.GroupSettings = []*mars.GroupSetting{{Name: "旧分区", Order: 1, Collapsed: true}}
+		captured := captureUpdate(t, e, current)
+
+		_, _, err := e.toolset().updateRepoCustomFields(ctxWithUser(adminUser()), nil, updateRepoCustomFieldsIn{
+			RepoID: 5,
+			Upsert: []repoElementIn{{
+				Path: "app->replicas", Type: "InputNumber", Default: "2", Description: "副本数", Group: "新分区",
+			}},
+			UpsertGroups:     []repoGroupSettingIn{{Name: "新分区"}},
+			RemoveGroupNames: []string{"旧分区"},
+		})
+		require.NoError(t, err)
+
+		cfg := captured().GetMarsConfig()
+		assert.Equal(t, "新分区", cfg.GetElements()[0].GetGroup())
+		assertGroupSettings(t, []*mars.GroupSetting{{Name: "新分区", Order: 1}},
+			cfg.GetGroupSettings(), "旧分区删除后重新从 1 起算追加")
+	})
+
+	t.Run("MarsConfig 为 nil 时仅写分区配置", func(t *testing.T) {
+		e := newTestEnv(t)
+		current := &apitypes.RepoModel{Id: 5, Name: "empty-repo"}
+		captured := captureUpdate(t, e, current)
+		collapsed := false
+
+		_, _, err := e.toolset().updateRepoCustomFields(ctxWithUser(adminUser()), nil, updateRepoCustomFieldsIn{
+			RepoID:       5,
+			Upsert:       []repoElementIn{{Path: "app->a", Type: "Input", Description: "字段 A", Group: "日志配置"}},
+			UpsertGroups: []repoGroupSettingIn{{Name: "日志配置", Collapsed: &collapsed}},
+		})
+		require.NoError(t, err)
+
+		req := captured()
+		assert.Nil(t, req.GitProjectId, "不需要 git 仓库时不回填绑定")
+		require.NotNil(t, req.GetMarsConfig())
+		assertGroupSettings(t, []*mars.GroupSetting{{Name: "日志配置", Order: 1, Collapsed: false}},
+			req.GetMarsConfig().GetGroupSettings())
 	})
 
 	t.Run("删除仅路径带首尾空白的存量字段", func(t *testing.T) {
@@ -655,6 +916,22 @@ func TestToolset_UpdateRepoCustomFields_Rejects(t *testing.T) {
 		{"NumberSelect 默认值非整数", updateRepoCustomFieldsIn{RepoID: 5, Upsert: []repoElementIn{
 			{Path: "a", Type: "NumberSelect", Default: "x", Description: "数值选项", SelectValues: []string{"x"}},
 		}}, "非 number 类型"},
+		{"分区 name 为空", updateRepoCustomFieldsIn{RepoID: 5, UpsertGroups: []repoGroupSettingIn{{}}}, "分区 name 不能为空"},
+		{"分区 name 仅空白", updateRepoCustomFieldsIn{RepoID: 5, UpsertGroups: []repoGroupSettingIn{{Name: "   "}}}, "分区 name 不能为空"},
+		{"分区名超过 64 字节", updateRepoCustomFieldsIn{RepoID: 5, UpsertGroups: []repoGroupSettingIn{
+			{Name: strings.Repeat("a", 65)},
+		}}, "名称过长"},
+		{"分区名按字节而非字符计算", updateRepoCustomFieldsIn{RepoID: 5, UpsertGroups: []repoGroupSettingIn{
+			{Name: strings.Repeat("分", 22)},
+		}}, "名称过长"},
+		{"upsert 分区 name 重复", updateRepoCustomFieldsIn{RepoID: 5, UpsertGroups: []repoGroupSettingIn{
+			{Name: "日志配置"}, {Name: " 日志配置 "},
+		}}, "name 重复"},
+		{"remove_group_names 含空 name", updateRepoCustomFieldsIn{RepoID: 5, RemoveGroupNames: []string{"   "}}, "空 name"},
+		{"remove_group_names 重复", updateRepoCustomFieldsIn{RepoID: 5, RemoveGroupNames: []string{"基础配置", " 基础配置 "}}, "重复"},
+		{"分区同时 upsert 与 remove", updateRepoCustomFieldsIn{RepoID: 5,
+			UpsertGroups: []repoGroupSettingIn{{Name: "基础配置"}}, RemoveGroupNames: []string{" 基础配置 "},
+		}, "同时出现"},
 	}
 	for _, tc := range noRepoCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -692,6 +969,77 @@ func TestToolset_UpdateRepoCustomFields_Rejects(t *testing.T) {
 			e := newTestEnv(t)
 			e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
 				return &repopb.ShowResponse{Item: customFieldRepo()}, nil
+			}
+			e.repoSvc.updateFn = func(context.Context, *repopb.UpdateRequest) (*repopb.UpdateResponse, error) {
+				t.Fatal("校验失败时不得调用 Update")
+				return nil, nil
+			}
+			_, _, err := e.toolset().updateRepoCustomFields(ctxWithUser(adminUser()), nil, tc.in)
+			require.Error(t, err)
+			assert.Equal(t, codes.InvalidArgument, status.Code(err))
+			assert.Contains(t, err.Error(), tc.want)
+		})
+	}
+
+	// 分区类校验依赖当前配置与字段归属，同样需要 Show 替身；校验失败不得调用 Update。
+	groupCases := []struct {
+		name   string
+		mutate func(*apitypes.RepoModel)
+		in     updateRepoCustomFieldsIn
+		want   string
+	}{
+		{
+			"删除不存在的分区",
+			func(*apitypes.RepoModel) {},
+			updateRepoCustomFieldsIn{RepoID: 5, RemoveGroupNames: []string{"不存在"}},
+			"不存在",
+		},
+		{
+			"删除仍被字段引用的分区",
+			func(r *apitypes.RepoModel) { r.MarsConfig.Elements[0].Group = "基础配置" },
+			updateRepoCustomFieldsIn{RepoID: 5, RemoveGroupNames: []string{"基础配置"}},
+			"仍被自定义字段",
+		},
+		{
+			// 元素 group 带首尾空白（脏数据）时也要按裁剪后的名称判定引用，
+			// 否则会误删配置、把字段推进无配置分区。
+			"元素分区名带空白仍阻止删除分区",
+			func(r *apitypes.RepoModel) { r.MarsConfig.Elements[0].Group = " 基础配置 " },
+			updateRepoCustomFieldsIn{RepoID: 5, RemoveGroupNames: []string{"基础配置"}},
+			"仍被自定义字段",
+		},
+		{
+			"新增分区未被任何字段引用",
+			func(*apitypes.RepoModel) {},
+			updateRepoCustomFieldsIn{RepoID: 5, UpsertGroups: []repoGroupSettingIn{{Name: "日志配置"}}},
+			"未被任何自定义字段引用",
+		},
+		{
+			"存量分区撞车时拒绝更新",
+			func(r *apitypes.RepoModel) {
+				r.MarsConfig.GroupSettings = append(r.MarsConfig.GroupSettings,
+					&mars.GroupSetting{Name: " 基础配置 ", Order: 2})
+			},
+			updateRepoCustomFieldsIn{RepoID: 5, UpsertGroups: []repoGroupSettingIn{{Name: "基础配置"}}},
+			"无法安全更新",
+		},
+		{
+			"存量分区撞车时拒绝删除",
+			func(r *apitypes.RepoModel) {
+				r.MarsConfig.GroupSettings = append(r.MarsConfig.GroupSettings,
+					&mars.GroupSetting{Name: " 基础配置 ", Order: 2})
+			},
+			updateRepoCustomFieldsIn{RepoID: 5, RemoveGroupNames: []string{"基础配置"}},
+			"无法安全删除",
+		},
+	}
+	for _, tc := range groupCases {
+		t.Run(tc.name, func(t *testing.T) {
+			e := newTestEnv(t)
+			current := customFieldRepo()
+			tc.mutate(current)
+			e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+				return &repopb.ShowResponse{Item: current}, nil
 			}
 			e.repoSvc.updateFn = func(context.Context, *repopb.UpdateRequest) (*repopb.UpdateResponse, error) {
 				t.Fatal("校验失败时不得调用 Update")

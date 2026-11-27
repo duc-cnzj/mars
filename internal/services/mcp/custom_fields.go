@@ -91,11 +91,22 @@ type repoElementIn struct {
 	Group            string   `json:"group,omitempty" jsonschema:"分区名（可选，仅前端展示）"`
 }
 
+// repoGroupSettingIn 是 update_repo_custom_fields 里单个分区（分组）的新定义。
+// name 是身份（改名 = 用新名新增 + 把字段改到新组 + 删除旧名）；order/collapsed
+// 用指针区分「未传」与「显式零值」——前者保留原值（新增时 order 追加末尾、collapsed=false）。
+type repoGroupSettingIn struct {
+	Name      string  `json:"name" jsonschema:"分区名（必填，1~64 字节）"`
+	Order     *uint32 `json:"order,omitempty" jsonschema:"排序值（可选）：更新已有分区不传保留原值，新增不传追加到末尾"`
+	Collapsed *bool   `json:"collapsed,omitempty" jsonschema:"默认折叠（可选）：更新已有分区不传保留原值，新增不传为 false"`
+}
+
 // updateRepoCustomFieldsIn 是 update_repo_custom_fields 的入参。
 type updateRepoCustomFieldsIn struct {
-	RepoID      int32           `json:"repo_id" jsonschema:"仓库 ID（必填）"`
-	Upsert      []repoElementIn `json:"upsert_elements,omitempty" jsonschema:"按 path 新增或整条替换自定义字段"`
-	RemovePaths []string        `json:"remove_paths,omitempty" jsonschema:"要删除的字段 path 列表；path 不存在会报错"`
+	RepoID           int32                `json:"repo_id" jsonschema:"仓库 ID（必填）"`
+	Upsert           []repoElementIn      `json:"upsert_elements,omitempty" jsonschema:"按 path 新增或整条替换自定义字段"`
+	RemovePaths      []string             `json:"remove_paths,omitempty" jsonschema:"要删除的字段 path 列表；path 不存在会报错"`
+	UpsertGroups     []repoGroupSettingIn `json:"upsert_group_settings,omitempty" jsonschema:"按 name 新增或更新分区展示配置（group_settings）"`
+	RemoveGroupNames []string             `json:"remove_group_names,omitempty" jsonschema:"要删除的分区名列表；分区不存在或仍被字段引用会报错"`
 }
 
 // elementPatch 是一条待应用的字段变更：element 是校验后的新定义，order 为 nil
@@ -105,11 +116,20 @@ type elementPatch struct {
 	order   *uint32
 }
 
-// maxElementGroupBytes 对齐 proto 校验规则：Element.group 非空时最长 64 字节
-// （见 api/proto/mars/mars.pb.validate.go）。MCP 在进程内直调 services，gRPC 的
+// groupPatch 是一条待应用的分区配置变更：name 是裁剪后的分区名（身份）；
+// order/collapsed 为 nil 时表示调用方未指定（更新保留原值、新增 order 追加末尾、
+// collapsed 落零值 false）。
+type groupPatch struct {
+	name      string
+	order     *uint32
+	collapsed *bool
+}
+
+// maxGroupNameBytes 对齐 proto 校验规则：Element.group 与 GroupSetting.name 最长均为
+// 64 字节（见 api/proto/mars/mars.pb.validate.go）。MCP 在进程内直调 services，gRPC 的
 // ValidatorUnaryServerInterceptor 不执行，故必须在此自校验——否则会写进一条之后被
 // 后台表单/其他 gRPC 更新路径拒绝的配置，仓库将无法再次保存。
-const maxElementGroupBytes = 64
+const maxGroupNameBytes = 64
 
 // getRepoCustomFields 读取仓库级自定义字段定义。仅管理员可调用：普通用户的连接
 // 根本不会注册本工具（tools/list 不可见），handler 内的 requireAdmin 作为纵深防御。
@@ -131,9 +151,10 @@ func (t *toolset) getRepoCustomFields(ctx context.Context, _ *sdk.CallToolReques
 	return nil, projectRepoCustomFields(item), nil
 }
 
-// updateRepoCustomFields 增量新增/覆盖/删除仓库级自定义字段。仓库配置是整段替换，
-// 故必须先 Show 读出当前配置、在克隆上只改 elements，再原值回填其余字段后 Update——
-// 否则 values_yaml/branches/配置片段/分区/休眠配置都会被清空。
+// updateRepoCustomFields 增量新增/覆盖/删除仓库级自定义字段，并可调整分区展示配置。
+// 仓库配置是整段替换，故必须先 Show 读出当前配置、在克隆上只改 elements 与
+// group_settings，再原值回填其余字段后 Update——否则 values_yaml/branches/配置片段/
+// 休眠配置都会被清空。
 //
 // 并发说明：Show 与 Update 之间没有版本校验（RepoSvc 不提供 CAS），两个管理员同时
 // 修改同一仓库时后写者会覆盖先写者的改动；本工具不引入额外锁，调用方应避免并发编辑。
@@ -149,11 +170,15 @@ func (t *toolset) updateRepoCustomFields(ctx context.Context, _ *sdk.CallToolReq
 	if in.RepoID <= 0 {
 		return nil, nil, errs.InvalidArgument("repo_id 必须大于 0")
 	}
-	if len(in.Upsert) == 0 && len(in.RemovePaths) == 0 {
-		return nil, nil, errs.InvalidArgument("upsert_elements 与 remove_paths 至少提供一个")
+	if len(in.Upsert) == 0 && len(in.RemovePaths) == 0 && len(in.UpsertGroups) == 0 && len(in.RemoveGroupNames) == 0 {
+		return nil, nil, errs.InvalidArgument("upsert_elements、remove_paths、upsert_group_settings、remove_group_names 至少提供一个")
 	}
 	// 先完成纯入参校验，任何非法字段都不触达仓库读/写。
 	patches, err := buildElementPatches(in.Upsert)
+	if err != nil {
+		return nil, nil, err
+	}
+	groupPatches, removeGroupNames, err := buildGroupPatches(in.UpsertGroups, in.RemoveGroupNames)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -177,6 +202,11 @@ func (t *toolset) updateRepoCustomFields(ctx context.Context, _ *sdk.CallToolReq
 		return nil, nil, err
 	}
 	cfg.Elements = elements
+	groups, err := applyGroupPatches(cfg.GetGroupSettings(), groupPatches, removeGroupNames, elements)
+	if err != nil {
+		return nil, nil, err
+	}
+	cfg.GroupSettings = groups
 
 	updated, err := t.repoSvc.Update(ctx, &repopb.UpdateRequest{
 		Id:           current.GetId(),
@@ -332,8 +362,8 @@ func toRepoElement(in repoElementIn) (*mars.Element, error) {
 	if !ok {
 		return nil, errs.InvalidArgument(fmt.Sprintf("未知的自定义字段类型: %q", in.Type))
 	}
-	if len(in.Group) > maxElementGroupBytes {
-		return nil, errs.InvalidArgument(fmt.Sprintf("自定义字段 %s 的分区名过长（最多 %d 字节，当前 %d）", path, maxElementGroupBytes, len(in.Group)))
+	if len(in.Group) > maxGroupNameBytes {
+		return nil, errs.InvalidArgument(fmt.Sprintf("自定义字段 %s 的分区名过长（最多 %d 字节，当前 %d）", path, maxGroupNameBytes, len(in.Group)))
 	}
 	// 描述与默认值的必填口径对齐后台仓库表单（mars-ui RepoFormModal.validateElements）：
 	// MCP 若允许空值落库，管理员之后打开后台表单会因「描述必填 / 默认值必填」无法保存该仓库。
@@ -453,6 +483,168 @@ func applyElementOrder(element *mars.Element, order *uint32, fallback uint32) {
 		return
 	}
 	element.Order = fallback
+}
+
+// buildGroupPatches 校验分区入参并归一化名称（裁首尾空白）。这里只做纯入参校验，
+// 任何非法字段都不触达仓库读/写：upsert 内 name 不得重复；remove 不得含空/重复名，
+// 也不得与 upsert 同名——这些判定都不依赖仓库现状。
+func buildGroupPatches(upsert []repoGroupSettingIn, removeNames []string) ([]groupPatch, []string, error) {
+	patches := make([]groupPatch, 0, len(upsert))
+	seen := make(map[string]struct{}, len(upsert)+len(removeNames))
+	for _, raw := range upsert {
+		name := strings.TrimSpace(raw.Name)
+		if name == "" {
+			return nil, nil, errs.InvalidArgument("分区 name 不能为空")
+		}
+		if len(name) > maxGroupNameBytes {
+			return nil, nil, errs.InvalidArgument(fmt.Sprintf("分区 %q 的名称过长（最多 %d 字节，当前 %d）", name, maxGroupNameBytes, len(name)))
+		}
+		if _, ok := seen[name]; ok {
+			return nil, nil, errs.InvalidArgument(fmt.Sprintf("upsert_group_settings 中 name 重复: %s", name))
+		}
+		seen[name] = struct{}{}
+		patches = append(patches, groupPatch{name: name, order: raw.Order, collapsed: raw.Collapsed})
+	}
+	removes := make([]string, 0, len(removeNames))
+	removed := make(map[string]struct{}, len(removeNames))
+	for _, raw := range removeNames {
+		name := strings.TrimSpace(raw)
+		if name == "" {
+			return nil, nil, errs.InvalidArgument("remove_group_names 不能包含空 name")
+		}
+		if _, ok := removed[name]; ok {
+			return nil, nil, errs.InvalidArgument(fmt.Sprintf("remove_group_names 中 name 重复: %s", name))
+		}
+		if _, ok := seen[name]; ok {
+			return nil, nil, errs.InvalidArgument(fmt.Sprintf("分区 %s 同时出现在 upsert 与 remove 中", name))
+		}
+		removed[name] = struct{}{}
+		removes = append(removes, name)
+	}
+	return patches, removes, nil
+}
+
+// applyGroupPatches 在现有分区列表上应用增量变更：已存在的 name 原位替换（order/
+// collapsed 未传时保留原值），新增的 name 追加到末尾；remove 必须命中现有分区且不得
+// 仍被字段引用。
+//
+// 分区与字段的关系是派生关系：前端 buildSections 由 element.group 推导分区，后台保存时
+// 只保留被字段引用的分区配置。故这里守住两条不变式——新增分区必须已有字段引用（否则
+// 写进去也会被后台保存静默丢弃），删除分区不得仍有字段引用（否则字段会掉进无配置分区，
+// 排序/折叠设置无声失效）。
+func applyGroupPatches(current []*mars.GroupSetting, patches []groupPatch, removeNames []string, elements []*mars.Element) ([]*mars.GroupSetting, error) {
+	// 与 elements 的 path 一样按「去首尾空白后的 name」建索引：历史配置可能存进过带空白的
+	// 名称，用原始值建索引会让这些分区既改不掉也删不了。撞车时明确报错，不静默合并；
+	// 不相关分区的修改仍应放行，避免一个脏分区锁死整个仓库。
+	nameCounts := make(map[string]int, len(current))
+	for _, g := range current {
+		nameCounts[strings.TrimSpace(g.GetName())]++
+	}
+	patchByName := make(map[string]groupPatch, len(patches))
+	for _, p := range patches {
+		patchByName[p.name] = p
+	}
+	// 分区名 → 首个引用它的字段 path，用于给出可操作的报错。
+	referenced := make(map[string]string, len(elements))
+	for _, el := range elements {
+		group := strings.TrimSpace(el.GetGroup())
+		if group == "" {
+			continue
+		}
+		if _, ok := referenced[group]; !ok {
+			referenced[group] = el.GetPath()
+		}
+	}
+	remove := make(map[string]struct{}, len(removeNames))
+	for _, name := range removeNames {
+		switch nameCounts[name] {
+		case 0:
+			return nil, errs.InvalidArgument(fmt.Sprintf("要删除的分区不存在: %s", name))
+		case 1:
+		default:
+			return nil, errs.InvalidArgument(fmt.Sprintf("仓库中存在多个仅空白不同的分区 %q，无法安全删除；请先在后台清理重复分区", name))
+		}
+		if path, ok := referenced[name]; ok {
+			return nil, errs.InvalidArgument(fmt.Sprintf("分区 %s 仍被自定义字段 %s 引用，请先把这些字段改到其他分区再删除", name, path))
+		}
+		remove[name] = struct{}{}
+	}
+	for _, p := range patches {
+		if nameCounts[p.name] > 1 {
+			return nil, errs.InvalidArgument(fmt.Sprintf("仓库中存在多个仅空白不同的分区 %q，无法安全更新；请先在后台清理重复分区", p.name))
+		}
+		if nameCounts[p.name] > 0 {
+			continue
+		}
+		if _, ok := referenced[p.name]; !ok {
+			return nil, errs.InvalidArgument(fmt.Sprintf("新增分区 %s 未被任何自定义字段引用：分区由字段的 group 派生，请先在 upsert_elements 里给字段设置该分区", p.name))
+		}
+	}
+
+	var maxOrder uint32
+	out := make([]*mars.GroupSetting, 0, len(current)+len(patches))
+	for _, g := range current {
+		name := strings.TrimSpace(g.GetName())
+		if _, ok := remove[name]; ok {
+			continue
+		}
+		patch, ok := patchByName[name]
+		if !ok {
+			if g.GetOrder() > maxOrder {
+				maxOrder = g.GetOrder()
+			}
+			out = append(out, g)
+			continue
+		}
+		// 深拷再改：未触碰的字段（含未来新增字段/未知字段）原样保留，只覆盖入参显式给出的项。
+		setting := proto.Clone(g).(*mars.GroupSetting)
+		setting.Name = name
+		if patch.order != nil {
+			setting.Order = *patch.order
+		}
+		if patch.collapsed != nil {
+			setting.Collapsed = *patch.collapsed
+		}
+		// 显式 order 也算进最大值，后续「追加到末尾」的新分区才会排在它之后。
+		if setting.GetOrder() > maxOrder {
+			maxOrder = setting.GetOrder()
+		}
+		out = append(out, setting)
+		delete(patchByName, name)
+	}
+	// 第二个循环按入参顺序追加新增分区；上面已替换的条目已从 map 删除，
+	// 仍在 map 里的就是新增项。
+	for _, p := range patches {
+		if _, ok := patchByName[p.name]; !ok {
+			continue
+		}
+		order, err := nextGroupOrder(p.order, maxOrder)
+		if err != nil {
+			return nil, err
+		}
+		setting := &mars.GroupSetting{Name: p.name, Order: order}
+		if p.collapsed != nil {
+			setting.Collapsed = *p.collapsed
+		}
+		if order > maxOrder {
+			maxOrder = order
+		}
+		out = append(out, setting)
+		delete(patchByName, p.name)
+	}
+	return out, nil
+}
+
+// nextGroupOrder 计算新增分区的排序值：显式指定时以入参为准，否则取当前最大值 +1；
+// 最大值已达上限时拒绝（与字段的自动追加语义保持一致）。
+func nextGroupOrder(order *uint32, maxOrder uint32) (uint32, error) {
+	if order != nil {
+		return *order, nil
+	}
+	if maxOrder == math.MaxUint32 {
+		return 0, errs.InvalidArgument(fmt.Sprintf("分区 order 已达上限 %d，无法自动追加；请显式指定 order 或先调整现有分区顺序", maxOrder))
+	}
+	return maxOrder + 1, nil
 }
 
 // cloneMarsConfig 深拷当前配置：Update 会在传入配置上回写派生字段（IsSimpleEnv），

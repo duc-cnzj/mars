@@ -188,7 +188,7 @@ curl -sS https://mars.example.com/mcp \
 |---|---|---|---|
 | `list_repos` | 只读 | 分页 + `name`/`enabled` 过滤 | 仓库概要，**不含** `mars_config`；用于拿 `repo_id` |
 | `get_repo_custom_fields` | 只读 | `repo_id` | 仓库配置：`values_yaml`、分支白名单、分区、休眠、自定义字段定义 `elements` |
-| `update_repo_custom_fields` | 写 | `repo_id` + `upsert_elements` / `remove_paths` | 增量新增/整条覆盖/删除仓库级自定义字段；**只改 `elements`**，其余配置原样保留 |
+| `update_repo_custom_fields` | 写 | `repo_id` + `upsert_elements` / `remove_paths` / `upsert_group_settings` / `remove_group_names` | 增量新增/整条覆盖/删除字段（`elements`），并维护分区展示配置（`group_settings`：`order` 排序、`collapsed` 默认折叠）；其余配置原样保留 |
 
 注意点：
 
@@ -196,6 +196,10 @@ curl -sS https://mars.example.com/mcp \
 - 写库前工具会自校验元素定义（类型、默认值、`select_values`、`group` 长度），因为
   `ValidatorUnaryServerInterceptor` 在进程内调用链上不生效；非法即整次调用失败、配置不变。
 - 删除或改坏被休眠配置 `replica_paths` 引用的字段会直接报错（事务不落库）。
+- 分区与字段是派生关系：**新增分区必须已被字段引用**（否则后台保存会丢弃），
+  **删除仍被字段引用的分区会报错**（需先把字段 `group` 改到其他分区）。分区改名 =
+  用新名新增 + 把字段改到新名 + 删除旧名。
+- `upsert_elements` 是整条替换：只改字段分组也要把 `type`/`default`/`description` 等现值一并重传。
 - 改定义不会自动重部署：之后的重部署/定时唤醒会按**新定义**重新校验存量项目，
   改 type 或收窄 `select_values` 可能让不兼容项目部署失败；删除字段会让项目值在下次部署时被丢弃。
 - 工具先读后写且无版本校验，**并发编辑同一仓库时后写者覆盖先写者**，请避免并发。
